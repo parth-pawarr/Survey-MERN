@@ -11,24 +11,24 @@ const HealthIssueSchema = new mongoose.Schema({
   additionalMorbidityDetails: String
 });
 
-const EducationChildSchema = new mongoose.Schema({
-  childName: { type: String, required: true, maxlength: 100 },
+const EducationProblem = new mongoose.Schema({
+  Name: { type: String, required: true, maxlength: 100 },
   age: { type: Number, required: true, min: 0, max: 25 },
   gender: { type: String, required: true, enum: ['Male', 'Female', 'Other'] },
   educationLevel: { type: String, required: true, enum: educationLevels },
-  hasEducationalIssues: { type: String, required: true, enum: ['Yes', 'No'] },
+  // hasEducationalIssues: { type: String, required: true, enum: ['Yes', 'No'] },
   educationalIssues: [{ type: String, enum: ['Financial problem', 'Transportation issue', 'Poor academic performance', 'Dropped out', 'Lack of digital access', 'Lack of books/material', 'Health issue', 'Family responsibility', 'Other'] }],
   otherEducationalIssue: String,
-  awareOfGovtSchemes: { type: String, required: true, enum: ['Yes', 'No', "Heard but don't know details"] }
+  // awareOfGovtSchemes: { type: String, required: true, enum: ['Yes', 'No', "Heard but don't know details"] }
 });
 
-const EmploymentMemberSchema = new mongoose.Schema({
-  name: { type: String, required: true, maxlength: 100 },
-  age: { type: Number, required: true, min: 15, max: 100 },
-  gender: { type: String, required: true, enum: ['Male', 'Female', 'Other'] },
-  employmentType: { type: String, required: true, enum: employmentTypes },
-  otherEmploymentType: String
-});
+// const EmploymentMemberSchema = new mongoose.Schema({
+//   name: { type: String, required: true, maxlength: 100 },
+//   age: { type: Number, required: true, min: 15, max: 100 },
+//   gender: { type: String, required: true, enum: ['Male', 'Female', 'Other'] },
+//   employmentType: { type: String, required: true, enum: employmentTypes },
+//   otherEmploymentType: String
+// });
 
 const UnemployedMemberSchema = new mongoose.Schema({
   name: { type: String, required: true, maxlength: 100 },
@@ -58,10 +58,14 @@ const HouseholdSurveySchema = new mongoose.Schema({
   ayushmanMembersCount: { type: Number, min: 0, max: 50 },
   hasHealthIssues: { type: String, required: true, enum: ['Yes', 'No'] },
   healthMembers: [HealthIssueSchema],
-  hasSchoolChildren: { type: String, required: true, enum: ['Yes', 'No'] },
-  educationChildren: [EducationChildSchema],
-  hasEmployedMembers: { type: String, required: true, enum: ['Yes', 'No'] },
-  employedMembers: [EmploymentMemberSchema],
+  // hasSchoolChildren: { type: String, required: true, enum: ['Yes', 'No'] },
+  // educationChildren: [EducationChildSchema],
+  hasEducationProblem: { type: String, required: true, enum: ['Yes', 'No'] },
+  educationProblem: [EducationProblem],
+  // hasEmployedMembers: { type: String, required: true, enum: ['Yes', 'No'] },
+  // employedMembers: [EmploymentMemberSchema],
+  hasUnEmployedMembers: { type: String, required: true, enum: ['Yes', 'No'] },
+  // employedMembers: [EmploymentMemberSchema],
   unemployedMembers: [UnemployedMemberSchema],
   surveyorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   village: { type: String, required: true, maxlength: 200 },

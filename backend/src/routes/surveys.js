@@ -1,11 +1,17 @@
 const express = require('express');
+const { protect } = require('../middlewares/auth');
+const { getSurveys, createSurvey, getSurvey, updateSurvey, submitSurvey } = require('../controllers/surveyController');
 const router = express.Router({ mergeParams: true });
 
-// Surveyor survey operations
-router.get('/', (req, res) => res.json({ message: 'Get surveys' }));
-router.post('/', (req, res) => res.json({ message: 'Create survey' }));
-router.get('/:id', (req, res) => res.json({ message: 'Get survey by ID' }));
-router.put('/:id', (req, res) => res.json({ message: 'Update draft' }));
-router.patch('/:id/submit', (req, res) => res.json({ message: 'Submit survey' }));
+// ALL routes protected - surveyor must be logged in
+router.use(protect);
+
+router.get('/', getSurveys);
+router.post('/', createSurvey);
+router.get('/:id', getSurvey);
+router.put('/:id', updateSurvey);
+router.patch('/:id/submit', submitSurvey);
+
+// Delete
 
 module.exports = router;
