@@ -1,8 +1,10 @@
 const express = require('express');
+const { registerSurveyor, login, otpLogin, verifyOTP } = require('../controllers/authController');
 const router = express.Router();
 
-router.post('/login', (req, res) => res.json({ message: 'Login route' }));
-router.post('/register', (req, res) => res.json({ message: 'Register surveyor' }));
-router.post('/otp-login', (req, res) => res.json({ message: 'OTP login' }));
+router.post('/register', registerSurveyor);
+router.post('/login', login);
+router.post('/otp-login', otpLogin);
+router.post('/verify-otp', verifyOTP);
 
 module.exports = router;
