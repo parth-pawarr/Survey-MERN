@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { healthIssues, educationLevels, employmentTypes, unemploymentReasons, skills } = require('./enums');
+const { healthIssues, educationLevels, employmentTypes, unemploymentReasons, skills } = require('./enum');
 
 const HealthIssueSchema = new mongoose.Schema({
   patientName: { type: String, required: true, maxlength: 100 },
