@@ -24,6 +24,7 @@ exports.registerSurveyor = async (req, res) => {
     const surveyor = new User({
       username,
       password: hashedPassword,
+      // password,
       role: 'surveyor',
       assignedVillages,
       createdBy: req.user?.userId // From JWT middleware (admin only)
