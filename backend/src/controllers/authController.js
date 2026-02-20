@@ -17,13 +17,11 @@ exports.registerSurveyor = async (req, res) => {
       return res.status(400).json({ message: 'Username already exists' });
     }
     
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-    
     // Create surveyor (role: 'surveyor')
+    // Password will be hashed by the pre-save hook in the User model
     const surveyor = new User({
       username,
-      password: hashedPassword,
+      password,
       role: 'surveyor',
       assignedVillages,
       createdBy: req.user?.userId // From JWT middleware (admin only)
