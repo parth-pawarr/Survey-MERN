@@ -15,7 +15,7 @@ const router = express.Router();
 router.post('/login', login); // Universal login for both admin and surveyor
 router.post('/admin-login', adminLogin); // Dedicated admin login
 router.post('/setup-admin', createInitialAdmin); // One-time admin setup
-router.post('/otp-login', otpLogin);
+router.post('/otp-login', otpLogin);  //coming soon
 router.post('/verify-otp', verifyOTP);
 
 // Protected routes
