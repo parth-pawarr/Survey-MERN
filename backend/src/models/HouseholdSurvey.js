@@ -58,20 +58,24 @@ const HouseholdSurveySchema = new mongoose.Schema({
   ayushmanMembersCount: { type: Number, min: 0, max: 50 },
   hasHealthIssues: { type: String, required: true, enum: ['Yes', 'No'] },
   healthMembers: [HealthIssueSchema],
-  // hasSchoolChildren: { type: String, required: true, enum: ['Yes', 'No'] },
-  // educationChildren: [EducationChildSchema],
-  hasEducationProblem: { type: String, required: true, enum: ['Yes', 'No'] },
-  educationProblem: [EducationProblem],
-  // hasEmployedMembers: { type: String, required: true, enum: ['Yes', 'No'] },
-  // employedMembers: [EmploymentMemberSchema],
+  hasSchoolChildren: { type: String, required: true, enum: ['Yes', 'No'] },
+  educationChildren: [EducationChildSchema],
+  hasEmployedMembers: { type: String, required: true, enum: ['Yes', 'No'] },
+  employedMembers: [EmploymentMemberSchema],
   hasUnEmployedMembers: { type: String, required: true, enum: ['Yes', 'No'] },
-  // employedMembers: [EmploymentMemberSchema],
   unemployedMembers: [UnemployedMemberSchema],
   surveyorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   village: { type: String, required: true, maxlength: 200 },
-  status: { type: String, enum: ['Draft', 'Submitted', 'Verified'], default: 'Draft' },
+  status: { type: String, enum: ['Draft', 'Submitted', 'Verified', 'Rejected'], default: 'Draft' },
   latitude: Number,
-  longitude: Number
+  longitude: Number,
+  // Verification fields
+  verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  verifiedAt: Date,
+  verificationNotes: String,
+  rejectedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  rejectedAt: Date,
+  rejectionReason: String
 }, { timestamps: true });
 
 HouseholdSurveySchema.index({ surveyorId: 1, village: 1 });
