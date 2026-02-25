@@ -66,20 +66,26 @@ const createApiClient = (): AxiosInstance => {
       return response;
     },
     (error: AxiosError) => {
-      // Handle 401 Unauthorized - Token expired
+      // Handle 401 Unauthorized — only redirect when a stored token has expired.
+      // If there's no token, this is just a failed login attempt; let the error
+      // propagate normally so the login page can display the error message.
       if (error.response?.status === 401) {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        window.location.href = '/login';
+        const hasStoredToken = !!localStorage.getItem('auth_token');
+        if (hasStoredToken) {
+          // Token expired — clear storage and return to the app root (no /login route)
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_data');
+          window.location.href = '/';
+        }
       }
-      
+
       // Handle network errors
       if (!error.response) {
         console.error('Network error:', error.message);
         return Promise.reject(new Error('Network connection failed. Please check your internet connection.'));
       }
-      
-      // Handle server errors
+
+      // Extract and forward server error message
       const message = (error.response?.data as any)?.message || 'An error occurred. Please try again.';
       return Promise.reject(new Error(message));
     }
@@ -96,20 +102,20 @@ export const tokenManager = {
   setToken: (token: string) => {
     localStorage.setItem('auth_token', token);
   },
-  
+
   getToken: (): string | null => {
     return localStorage.getItem('auth_token');
   },
-  
+
   removeToken: () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_data');
   },
-  
+
   setUserData: (userData: any) => {
     localStorage.setItem('user_data', JSON.stringify(userData));
   },
-  
+
   getUserData: (): any => {
     const data = localStorage.getItem('user_data');
     return data ? JSON.parse(data) : null;
@@ -117,14 +123,16 @@ export const tokenManager = {
 };
 
 // Generic API wrapper
+// Returns T directly — the backend sends flat JSON (no { data: T } wrapper),
+// so callers access fields directly on the return value (not via .data).
 export const apiRequest = async <T = any>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   url: string,
   data?: any,
   config?: any
-): Promise<ApiResponse<T>> => {
+): Promise<T> => {
   try {
-    const response = await apiClient.request<ApiResponse<T>>({
+    const response = await apiClient.request<T>({
       method,
       url,
       data,
@@ -136,7 +144,7 @@ export const apiRequest = async <T = any>(
   }
 };
 
-// Helper methods
+// Helper methods — return T directly (no .data wrapper needed on call sites)
 export const api = {
   get: <T = any>(url: string, config?: any) => apiRequest<T>('GET', url, undefined, config),
   post: <T = any>(url: string, data?: any, config?: any) => apiRequest<T>('POST', url, data, config),

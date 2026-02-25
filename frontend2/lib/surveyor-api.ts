@@ -65,7 +65,38 @@ export interface SurveyorStats {
   }>;
 }
 
+export interface HealthMemberPayload {
+  patientName: string;
+  age: number;
+  gender: string;
+  healthIssueType: string;
+  otherHealthIssue?: string;
+  hasAdditionalMorbidity: string;
+  additionalMorbidityDetails?: string;
+}
+
+export interface EducationChildPayload {
+  Name: string;             // capital N — matches backend EducationProblem schema
+  age: number;
+  gender: string;
+  educationLevel: string;
+  educationalIssues?: string[];
+  otherEducationalIssue?: string;
+}
+
+export interface UnemployedMemberPayload {
+  name: string;
+  age: number;
+  gender: string;
+  highestEducation: string;
+  skillsKnown?: string[];   // backend field name
+  otherSkills?: string;
+  unemploymentReason: string;
+  otherReason?: string;
+}
+
 export interface CreateSurveyRequest {
+  // Phase 1 — Household basic info
   representativeName: string;
   mobileNumber: string;
   representativeAge: number;
@@ -73,67 +104,66 @@ export interface CreateSurveyRequest {
   totalFamilyMembers: number;
   ayushmanCardStatus: string;
   ayushmanMembersCount?: number;
+  // Phase 2 — Health
   hasHealthIssues: string;
+  healthMembers?: HealthMemberPayload[];
+  // Phase 3 — Education
   hasSchoolChildren: string;
+  educationChildren?: EducationChildPayload[];
+  // Phase 4 — Employment
   hasEmployedMembers: string;
+  hasUnEmployedMembers: string;
+  unemployedMembers?: UnemployedMemberPayload[];
+  // Metadata
   village: string;
   latitude?: number;
   longitude?: number;
 }
 
 // Surveyor API service
+// NOTE: api.get/post/etc return T directly (no .data wrapper) — backend sends flat JSON
 export class SurveyorApiService {
   // Village Access
   static async getAssignedVillages() {
-    const response = await api.get<Village[]>('/villages/mine');
-    return response.data;
+    return api.get<Village[]>('/villages/mine');
   }
 
   static async getAllVillages() {
-    const response = await api.get<Village[]>('/villages');
-    return response.data;
+    return api.get<Village[]>('/villages');
   }
 
   // Survey Management
   static async getSurveys(village?: string) {
     const params = village ? `?village=${encodeURIComponent(village)}` : '';
-    const response = await api.get<Survey[]>(`/surveys${params}`);
-    return response.data;
+    return api.get<Survey[]>(`/surveys${params}`);
   }
 
   static async getSurvey(id: string) {
-    const response = await api.get<Survey>(`/surveys/${id}`);
-    return response.data;
+    return api.get<Survey>(`/surveys/${id}`);
   }
 
   static async createSurvey(data: CreateSurveyRequest) {
-    const response = await api.post<{ message: string; surveyId: string }>('/surveys', data);
-    return response.data;
+    return api.post<{ message: string; surveyId: string }>('/surveys', data);
   }
 
   static async updateSurvey(id: string, data: Partial<CreateSurveyRequest>) {
-    const response = await api.put<Survey>(`/surveys/${id}`, data);
-    return response.data;
+    return api.put<Survey>(`/surveys/${id}`, data);
   }
 
   static async submitSurvey(id: string) {
-    const response = await api.patch<{ message: string; survey: Survey }>(`/surveys/${id}/submit`);
-    return response.data;
+    return api.patch<{ message: string; survey: Survey }>(`/surveys/${id}/submit`);
   }
 
   static async deleteSurvey(id: string) {
-    const response = await api.delete<{ message: string }>(`/surveys/${id}`);
-    return response.data;
+    return api.delete<{ message: string }>(`/surveys/${id}`);
   }
 
   static async getSurveyorStats() {
-    const response = await api.get<SurveyorStats>('/surveys/stats/my');
-    return response.data;
+    return api.get<SurveyorStats>('/surveys/stats/my');
   }
 
   static async getSurveyHistory(id: string) {
-    const response = await api.get(`/surveys/${id}/history`);
-    return response.data;
+    return api.get(`/surveys/${id}/history`);
   }
 }
 

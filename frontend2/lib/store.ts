@@ -143,13 +143,9 @@ export const UNEMPLOYMENT_REASONS = [
 
 export const GENDERS = ["Male", "Female", "Other"];
 
-// Hardcoded admin credentials
-export const ADMIN_CREDENTIALS = {
-  username: "admin",
-  password: "admin123",
-};
+// Hardcoded admin credentials — REMOVED (use backend auth via /api/auth/login)
 
-// LocalStorage helpers
+// LocalStorage helpers (used for offline draft saving)
 export function getSurveyors(): Surveyor[] {
   if (typeof window === "undefined") return [];
   const data = localStorage.getItem("surveyors");
@@ -175,34 +171,6 @@ export function saveSurvey(survey: SurveyData) {
 export function checkDuplicate(village: string, mobile: string): boolean {
   const surveys = getSurveys();
   return surveys.some((s) => s.village === village && s.householdData.mobile === mobile);
-}
-
-export function authenticateSurveyor(
-  username: string,
-  password: string
-): Surveyor | null {
-  const surveyors = getSurveyors();
-  return (
-    surveyors.find(
-      (s) => s.username === username && s.password === password
-    ) || null
-  );
-}
-
-export function authenticateUser(
-  username: string,
-  password: string
-): { role: "admin" } | { role: "surveyor"; surveyor: Surveyor } | null {
-  // Check admin first
-  if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-    return { role: "admin" };
-  }
-  // Check surveyors
-  const surveyor = authenticateSurveyor(username, password);
-  if (surveyor) {
-    return { role: "surveyor", surveyor };
-  }
-  return null;
 }
 
 export function getSurveysBySurveyor(surveyorId: string): SurveyData[] {

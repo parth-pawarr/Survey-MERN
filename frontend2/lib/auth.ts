@@ -1,4 +1,4 @@
-import { api, tokenManager, LoginResponse, AdminLoginResponse } from './api';
+import { api, tokenManager, LoginResponse } from './api';
 
 // Authentication types
 export interface User {
@@ -25,62 +25,44 @@ export interface AuthState {
 
 // Authentication service
 export class AuthService {
-  // Login for both admin and surveyor
+  // Unified login — uses a single /auth/login endpoint for both admin and surveyor
+  // api.post<T> now returns T directly (no .data wrapper needed)
   static async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
     try {
-      // Try admin login first
-      try {
-        const adminResponse = await api.post<AdminLoginResponse>('/auth/admin-login', credentials);
-        const { user: adminUser, token } = adminResponse.data;
-        
-        const user: User = {
-          id: adminUser.id,
-          username: adminUser.username,
-          role: adminUser.role as 'admin',
-        };
-        
-        tokenManager.setToken(token);
-        tokenManager.setUserData(user);
-        
-        return { user, token };
-      } catch (adminError) {
-        // If admin login fails, try surveyor login
-        const surveyorResponse = await api.post<LoginResponse>('/auth/login', credentials);
-        const { user: surveyorUser, token } = surveyorResponse.data;
-        
-        const user: User = {
-          id: surveyorUser.id,
-          username: surveyorUser.username,
-          role: surveyorUser.role as 'surveyor',
-          assignedVillages: surveyorUser.assignedVillages,
-        };
-        
-        tokenManager.setToken(token);
-        tokenManager.setUserData(user);
-        
-        return { user, token };
-      }
+      const result = await api.post<LoginResponse>('/auth/login', credentials);
+      // result = { token, user: { id, username, role, assignedVillages? }, message }
+
+      const user: User = {
+        id: result.user.id,
+        username: result.user.username,
+        role: result.user.role as 'admin' | 'surveyor',
+        assignedVillages: result.user.assignedVillages,
+      };
+
+      tokenManager.setToken(result.token);
+      tokenManager.setUserData(user);
+
+      return { user, token: result.token };
     } catch (error: any) {
       throw new Error(error.message || 'Login failed. Please check your credentials.');
     }
   }
 
-  // Admin-specific login
+  // Admin-specific login (dedicated endpoint)
   static async adminLogin(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
     try {
-      const response = await api.post<AdminLoginResponse>('/auth/admin-login', credentials);
-      const { user: adminUser, token } = response.data;
-      
+      const result = await api.post<LoginResponse>('/auth/admin-login', credentials);
+
       const user: User = {
-        id: adminUser.id,
-        username: adminUser.username,
-        role: adminUser.role as 'admin',
+        id: result.user.id,
+        username: result.user.username,
+        role: 'admin',
       };
-      
-      tokenManager.setToken(token);
+
+      tokenManager.setToken(result.token);
       tokenManager.setUserData(user);
-      
-      return { user, token };
+
+      return { user, token: result.token };
     } catch (error: any) {
       throw new Error(error.message || 'Admin login failed. Please check your credentials.');
     }
@@ -89,30 +71,30 @@ export class AuthService {
   // Surveyor-specific login
   static async surveyorLogin(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
     try {
-      const response = await api.post<LoginResponse>('/auth/login', credentials);
-      const { user: surveyorUser, token } = response.data;
-      
+      const result = await api.post<LoginResponse>('/auth/login', credentials);
+
       const user: User = {
-        id: surveyorUser.id,
-        username: surveyorUser.username,
-        role: surveyorUser.role as 'surveyor',
-        assignedVillages: surveyorUser.assignedVillages,
+        id: result.user.id,
+        username: result.user.username,
+        role: result.user.role as 'surveyor',
+        assignedVillages: result.user.assignedVillages,
       };
-      
-      tokenManager.setToken(token);
+
+      tokenManager.setToken(result.token);
       tokenManager.setUserData(user);
-      
-      return { user, token };
+
+      return { user, token: result.token };
     } catch (error: any) {
       throw new Error(error.message || 'Surveyor login failed. Please check your credentials.');
     }
   }
 
   // Get current user profile
+  // /auth/profile returns { user: { id, username, role, ... } } — unwrap the inner user object
   static async getProfile(): Promise<User> {
     try {
-      const response = await api.get<User>('/auth/profile');
-      return response.data;
+      const result = await api.get<{ user: User }>('/auth/profile');
+      return result.user;
     } catch (error: any) {
       throw new Error(error.message || 'Failed to get user profile.');
     }
@@ -121,7 +103,6 @@ export class AuthService {
   // Logout
   static logout(): void {
     tokenManager.removeToken();
-    // Redirect to login page will be handled by the interceptor
   }
 
   // Check if user is authenticated
@@ -141,7 +122,7 @@ export class AuthService {
     return tokenManager.getToken();
   }
 
-  // Validate token (optional - can be used on app initialization)
+  // Validate token by calling /auth/profile
   static async validateToken(): Promise<boolean> {
     try {
       await this.getProfile();

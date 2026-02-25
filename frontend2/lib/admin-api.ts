@@ -85,6 +85,7 @@ export interface DashboardStats {
 }
 
 // Admin API service
+// NOTE: api.get/post/etc return T directly (no .data wrapper) — backend sends flat JSON
 export class AdminApiService {
   // Surveyor Management
   static async getSurveyors(page = 1, limit = 20, search?: string) {
@@ -93,39 +94,31 @@ export class AdminApiService {
       limit: limit.toString(),
       ...(search && { search }),
     });
-    
-    const response = await api.get<{ surveyors: Surveyor[]; pagination: any }>(`/admin/surveyors?${params}`);
-    return response.data;
+    return api.get<{ surveyors: Surveyor[]; pagination: any }>(`/admin/surveyors?${params}`);
   }
 
   static async createSurveyor(data: CreateSurveyorRequest) {
-    const response = await api.post<{ message: string; surveyorId: string }>('/admin/surveyors', data);
-    return response.data;
+    return api.post<{ message: string; surveyorId: string }>('/admin/surveyors', data);
   }
 
   static async getSurveyor(id: string) {
-    const response = await api.get<Surveyor>(`/admin/surveyors/${id}`);
-    return response.data;
+    return api.get<Surveyor>(`/admin/surveyors/${id}`);
   }
 
   static async updateSurveyor(id: string, data: UpdateSurveyorRequest) {
-    const response = await api.put<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}`, data);
-    return response.data;
+    return api.put<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}`, data);
   }
 
   static async updateSurveyorVillages(id: string, villages: string[]) {
-    const response = await api.put<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}/villages`, { assignedVillages: villages });
-    return response.data;
+    return api.put<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}/villages`, { assignedVillages: villages });
   }
 
   static async toggleSurveyorStatus(id: string) {
-    const response = await api.patch<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}/status`);
-    return response.data;
+    return api.patch<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}/status`);
   }
 
   static async resetSurveyorPassword(id: string, newPassword?: string) {
-    const response = await api.patch<{ message: string }>(`/admin/surveyors/${id}/reset-password`, { newPassword });
-    return response.data;
+    return api.patch<{ message: string }>(`/admin/surveyors/${id}/reset-password`, { newPassword });
   }
 
   // Village Management
@@ -135,40 +128,32 @@ export class AdminApiService {
       limit: limit.toString(),
       ...(search && { search }),
     });
-    
-    const response = await api.get<{ villages: Village[]; pagination: any }>(`/admin/villages?${params}`);
-    return response.data;
+    return api.get<{ villages: Village[]; pagination: any }>(`/admin/villages?${params}`);
   }
 
   static async getVillage(id: string) {
-    const response = await api.get<Village>(`/admin/villages/${id}`);
-    return response.data;
+    return api.get<Village>(`/admin/villages/${id}`);
   }
 
   static async createVillage(data: CreateVillageRequest) {
-    const response = await api.post<{ message: string; village: Village }>(`/admin/villages`, data);
-    return response.data;
+    return api.post<{ message: string; village: Village }>(`/admin/villages`, data);
   }
 
   static async updateVillage(id: string, data: Partial<CreateVillageRequest>) {
-    const response = await api.put<{ message: string; village: Village }>(`/admin/villages/${id}`, data);
-    return response.data;
+    return api.put<{ message: string; village: Village }>(`/admin/villages/${id}`, data);
   }
 
   static async assignVillageSurveyors(id: string, surveyors: string[]) {
-    const response = await api.put<{ message: string; village: Village }>(`/admin/villages/${id}/surveyors`, { assignedSurveyors: surveyors });
-    return response.data;
+    return api.put<{ message: string; village: Village }>(`/admin/villages/${id}/surveyors`, { assignedSurveyors: surveyors });
   }
 
   static async deleteVillage(id: string) {
-    const response = await api.delete<{ message: string; village: Village }>(`/admin/villages/${id}`);
-    return response.data;
+    return api.delete<{ message: string; village: Village }>(`/admin/villages/${id}`);
   }
 
   // Dashboard Analytics
   static async getDashboardStats() {
-    const response = await api.get<DashboardStats>('/admin/dashboard/stats');
-    return response.data;
+    return api.get<DashboardStats>('/admin/dashboard/stats');
   }
 
   static async getSurveyAnalytics(startDate?: string, endDate?: string, village?: string, surveyor?: string) {
@@ -177,18 +162,14 @@ export class AdminApiService {
     if (endDate) params.append('endDate', endDate);
     if (village) params.append('village', village);
     if (surveyor) params.append('surveyor', surveyor);
-    
-    const response = await api.get(`/admin/analytics/surveys?${params}`);
-    return response.data;
+    return api.get(`/admin/analytics/surveys?${params}`);
   }
 
   static async getSurveyorPerformance(startDate?: string, endDate?: string) {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
-    
-    const response = await api.get(`/admin/analytics/surveyors?${params}`);
-    return response.data;
+    return api.get(`/admin/analytics/surveyors?${params}`);
   }
 
   // Data Export
@@ -199,23 +180,18 @@ export class AdminApiService {
         if (value) params.append(key, value as string);
       });
     }
-    
-    const response = await api.get(`/admin/export/surveys?${params}`);
-    return response.data;
+    return api.get(`/admin/export/surveys?${params}`);
   }
 
   static async exportSurveyorPerformance(format: 'json' | 'csv' = 'json', startDate?: string, endDate?: string) {
     const params = new URLSearchParams({ format });
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
-    
-    const response = await api.get(`/admin/export/surveyor-performance?${params}`);
-    return response.data;
+    return api.get(`/admin/export/surveyor-performance?${params}`);
   }
 
   static async exportVillageStats(format: 'json' | 'csv' = 'json') {
-    const response = await api.get(`/admin/export/village-stats?format=${format}`);
-    return response.data;
+    return api.get(`/admin/export/village-stats?format=${format}`);
   }
 
   // Survey Verification
@@ -224,35 +200,28 @@ export class AdminApiService {
       page: page.toString(),
       limit: limit.toString(),
     });
-    
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value as string);
       });
     }
-    
-    const response = await api.get(`/admin/surveys/submitted?${params}`);
-    return response.data;
+    return api.get(`/admin/surveys/submitted?${params}`);
   }
 
   static async getSurveyForReview(id: string) {
-    const response = await api.get(`/admin/surveys/${id}/review`);
-    return response.data;
+    return api.get(`/admin/surveys/${id}/review`);
   }
 
   static async approveSurvey(id: string, verificationNotes?: string) {
-    const response = await api.patch(`/admin/surveys/${id}/approve`, { verificationNotes });
-    return response.data;
+    return api.patch(`/admin/surveys/${id}/approve`, { verificationNotes });
   }
 
   static async rejectSurvey(id: string, rejectionReason: string, verificationNotes?: string) {
-    const response = await api.patch(`/admin/surveys/${id}/reject`, { rejectionReason, verificationNotes });
-    return response.data;
+    return api.patch(`/admin/surveys/${id}/reject`, { rejectionReason, verificationNotes });
   }
 
   static async getVerificationStats() {
-    const response = await api.get('/admin/verification-stats');
-    return response.data;
+    return api.get('/admin/verification-stats');
   }
 }
 

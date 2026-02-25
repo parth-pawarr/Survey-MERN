@@ -26,12 +26,10 @@ export function LoginPage({ onAdminLogin, onSurveyorLogin }: LoginPageProps) {
     try {
       clearError();
       await login({ username, password });
-      
-      // The auth context will handle the role-based routing
-      // This will be handled by the main page component
-      window.location.reload(); // Temporary solution - will be improved
+      // AuthContext updates isAuthenticated + user on LOGIN_SUCCESS,
+      // which triggers the useEffect in page.tsx — no reload needed.
     } catch (error) {
-      // Error is handled by the auth context
+      // Error is handled and surfaced via AuthContext's error state
       console.error('Login error:', error);
     }
   };
@@ -74,9 +72,9 @@ export function LoginPage({ onAdminLogin, onSurveyorLogin }: LoginPageProps) {
               disabled={isLoading}
             />
           </div>
-          <Button 
-            onClick={handleLogin} 
-            className="mt-1" 
+          <Button
+            onClick={handleLogin}
+            className="mt-1"
             disabled={isLoading || !username || !password}
           >
             {isLoading ? (
