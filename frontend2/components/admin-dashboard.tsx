@@ -129,10 +129,13 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         {/* A. Add Surveyor Form */}
         <AddSurveyorSection onSurveyorAdded={loadInitialData} villages={villages} />
 
-        {/* B. Surveyor List with Village Assignment */}
+        {/* B. Add Village Form */}
+        <AddVillageSection onVillageAdded={loadInitialData} />
+
+        {/* C. Surveyor List with Village Assignment */}
         <SurveyorListSection surveyors={surveyors} villages={villages} onUpdated={loadInitialData} />
 
-        {/* C. Village Management */}
+        {/* D. Village Management */}
         <VillageManagementSection villages={villages} surveyors={surveyors} onUpdated={loadInitialData} />
       </main>
     </div>
@@ -280,7 +283,66 @@ function AddSurveyorSection({ onSurveyorAdded, villages }: { onSurveyorAdded: ()
   );
 }
 
-// --- B. Surveyor List Section ---
+// --- B. Add Village Form ---
+function AddVillageSection({ onVillageAdded }: { onVillageAdded: () => void }) {
+  const [name, setName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    if (!name) {
+      setError("Please enter a village name");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError("");
+      
+      await AdminApiService.createVillage({
+        name,
+        assignedSurveyors: []
+      });
+      
+      setName("");
+      onVillageAdded();
+    } catch (error: any) {
+      setError(error.message || 'Failed to create village');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Add Village</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="v-name" className="text-xs">Village Name</Label>
+          <Input 
+            id="v-name" 
+            placeholder="Enter village name" 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={isLoading}
+            className="h-9"
+          />
+        </div>
+
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        
+        <Button onClick={handleSubmit} disabled={isLoading || !name} className="h-8">
+          {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+          Add Village
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --- C. Surveyor List Section ---
 function SurveyorListSection({ surveyors, villages, onUpdated }: { 
   surveyors: Surveyor[]; 
   villages: Village[]; 
@@ -310,8 +372,8 @@ function SurveyorListSection({ surveyors, villages, onUpdated }: {
                 <p className="font-medium text-sm">{surveyor.username}</p>
                 <p className="text-xs text-muted-foreground">{surveyor.mobile}</p>
                 <div className="flex gap-1 mt-1">
-                  {surveyor.assignedVillages.map((village: string, idx: number) => (
-                    <Badge key={idx} variant="secondary" className="text-xs">
+                  {surveyor.assignedVillages.map((village: string) => (
+                    <Badge key={village} variant="secondary" className="text-xs">
                       {village}
                     </Badge>
                   ))}
@@ -338,12 +400,40 @@ function SurveyorListSection({ surveyors, villages, onUpdated }: {
   );
 }
 
-// --- C. Village Management Section ---
+// --- D. Village Management Section ---
 function VillageManagementSection({ villages, surveyors, onUpdated }: { 
   villages: Village[]; 
   surveyors: Surveyor[]; 
   onUpdated: () => void; 
 }) {
+  const [expandedVillage, setExpandedVillage] = useState<string | null>(null);
+  const [loadingVillage, setLoadingVillage] = useState<string | null>(null);
+
+  const handleAssignSurveyor = async (villageId: string, surveyorIds: string[]) => {
+    try {
+      setLoadingVillage(villageId);
+      await AdminApiService.assignVillageSurveyors(villageId, surveyorIds);
+      onUpdated();
+    } catch (error: any) {
+      console.error('Failed to assign surveyors:', error);
+    } finally {
+      setLoadingVillage(null);
+    }
+  };
+
+  if (villages.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Villages</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-muted-foreground py-4">No villages created yet. Add one above!</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -355,24 +445,70 @@ function VillageManagementSection({ villages, surveyors, onUpdated }: {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-sm">{village.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {village.surveyedHouseholds}/{village.totalHouseholds} households surveyed
-                </p>
                 <div className="flex gap-1 mt-1">
-                  {village.assignedSurveyors.map((surveyorId: string, idx: number) => {
+                  {village.assignedSurveyors.slice(0, 3).map((surveyorId: string) => {
                     const surveyor = surveyors.find((s: Surveyor) => s._id === surveyorId);
                     return surveyor ? (
-                      <Badge key={idx} variant="outline" className="text-xs">
+                      <Badge key={surveyorId} variant="outline" className="text-xs">
                         {surveyor.username}
                       </Badge>
                     ) : null;
                   })}
+                  {village.assignedSurveyors.length > 3 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{village.assignedSurveyors.length - 3}
+                    </Badge>
+                  )}
                 </div>
               </div>
-              <Badge variant="secondary">
-                {Math.round((village.surveyedHouseholds / village.totalHouseholds) * 100)}%
-              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setExpandedVillage(expandedVillage === village._id ? null : village._id)}
+                className="h-7 text-xs"
+                disabled={loadingVillage === village._id}
+              >
+                {loadingVillage === village._id ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  "Assign"
+                )}
+              </Button>
             </div>
+
+            {/* Dropdown for assigning surveyors */}
+            {expandedVillage === village._id && (
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-xs font-medium mb-2">Surveyors assigned to {village.name}:</p>
+                <div className="flex flex-col gap-2">
+                  {surveyors.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No surveyors available</p>
+                  ) : (
+                    <>
+                      <select
+                        multiple
+                        value={village.assignedSurveyors || []}
+                        onChange={(e) => {
+                          const selected = Array.from(e.target.selectedOptions, option => option.value);
+                          handleAssignSurveyor(village._id, selected);
+                        }}
+                        disabled={loadingVillage === village._id}
+                        className="border rounded p-2 text-xs bg-white max-h-40"
+                      >
+                        {surveyors.map((surveyor) => (
+                          <option key={surveyor._id} value={surveyor._id}>
+                            {surveyor.username}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-muted-foreground">
+                        (Hold Ctrl/Cmd to select multiple)
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </CardContent>

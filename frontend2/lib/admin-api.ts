@@ -41,7 +41,7 @@ export interface Village {
 
 export interface CreateVillageRequest {
   name: string;
-  totalHouseholds: number;
+  // totalHouseholds: number;
   assignedSurveyors?: string[];
 }
 

@@ -127,6 +127,14 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
           </div>
         )}
 
+        {villages.length === 0 && !error && (
+          <div className="mx-4 mt-4 p-4 rounded-lg border border-muted bg-muted/30">
+            <p className="text-sm text-muted-foreground text-center">
+              No villages assigned yet. Please contact your admin to assign villages to your account.
+            </p>
+          </div>
+        )}
+
         <main className="mx-auto max-w-lg p-4 flex flex-col gap-4">
           <Card>
             <CardHeader className="pb-2">
@@ -141,8 +149,8 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
                   <SelectValue placeholder="Choose a village to start survey" />
                 </SelectTrigger>
                 <SelectContent>
-                  {villages.map((village) => (
-                    <SelectItem key={village._id} value={village.name}>
+                  {villages.map((village, index) => (
+                    <SelectItem key={`${village._id}-${index}`} value={village.name}>
                       <div className="flex items-center justify-between w-full">
                         <span>{village.name}</span>
                         <Badge variant="outline" className="ml-2 text-xs">
@@ -182,8 +190,15 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
               <CardTitle className="text-base">Your Villages</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {villages.map((village) => (
-                <div key={village._id} className="border rounded-lg p-3">
+              {villages.map((village, index) => (
+                <div
+                  key={`${village._id}-${index}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedVillage(village.name)}
+                  onKeyDown={(e) => e.key === "Enter" && setSelectedVillage(village.name)}
+                  className="border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-sm">{village.name}</p>
