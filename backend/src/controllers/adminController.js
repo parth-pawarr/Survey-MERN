@@ -1330,6 +1330,7 @@ exports.getSurveyAnalytics = async (req, res) => {
     const healthStats = await HouseholdSurvey.aggregate([
       { $match: { ...filter, hasHealthIssues: 'Yes' } },
       { $unwind: '$healthMembers' },
+      { $unwind: '$healthMembers.healthIssueType' },
       {
         $group: {
           _id: '$healthMembers.healthIssueType',

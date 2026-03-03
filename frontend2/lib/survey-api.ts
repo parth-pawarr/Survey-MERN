@@ -27,9 +27,9 @@ export interface HealthMember {
   age?: number;
   gender?: string;
   hasAyushman: string;       // UI-only, not saved to backend
-  healthIssue: string;       // maps → healthIssueType
+  healthIssue: string[];     // maps → healthIssueType (array)
   healthIssueOther?: string; // maps → otherHealthIssue
-  morbidity: string;         // maps → hasAdditionalMorbidity
+  morbidity: string[];       // maps → hasAdditionalMorbidity (array)
   morbidityOther?: string;   // maps → additionalMorbidityDetails
 }
 

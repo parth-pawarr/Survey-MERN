@@ -40,9 +40,9 @@ interface HealthMember {
   age?: number;
   gender?: string;
   hasAyushman: string;
-  healthIssue: string;
+  healthIssue: string[];
   healthIssueOther?: string;
-  morbidity: string;
+  morbidity: string[];
   morbidityOther?: string;
 }
 
@@ -293,8 +293,8 @@ export function SurveyStepper({
         age: undefined,
         gender: "",
         hasAyushman: "",
-        healthIssue: "",
-        morbidity: "",
+        healthIssue: [],
+        morbidity: [],
       }]);
     }
   };
@@ -614,6 +614,12 @@ export function SurveyStepper({
                   {isDuplicate && (
                     <p className="text-xs text-destructive">This number already exists</p>
                   )}
+                  <CompactRadioGroup
+                    label="Is this WhatsApp number?"
+                    options={["Yes", "No"]}
+                    value={isWhatsApp}
+                    onChange={setIsWhatsApp}
+                  />
                   <AgeGenderRow
                     age={age}
                     gender={gender}
@@ -650,12 +656,6 @@ export function SurveyStepper({
                       maxLength={2}
                     />
                   )}
-                  <CompactRadioGroup
-                    label="Is this WhatsApp number?"
-                    options={["Yes", "No"]}
-                    value={isWhatsApp}
-                    onChange={setIsWhatsApp}
-                  />
                 </CardContent>
               </Card>
             )}
@@ -746,20 +746,88 @@ export function SurveyStepper({
                               onChange={(v) => updateHealthMember(healthIdx, "hasAyushman", v)}
                               options={["Yes", "No"]}
                             />
-                            <CompactDropdown
-                              label="Type of Health Issue"
-                              value={healthMembers[healthIdx]?.healthIssue || ""}
-                              onChange={(v) => updateHealthMember(healthIdx, "healthIssue", v)}
-                              options={HEALTH_ISSUES}
-                              placeholder="Select issue"
-                            />
-                            <CompactDropdown
-                              label="Morbidity / Other Health Problems"
-                              value={healthMembers[healthIdx]?.morbidity || ""}
-                              onChange={(v) => updateHealthMember(healthIdx, "morbidity", v)}
-                              options={MORBIDITY_OPTIONS}
-                              placeholder="Select morbidity"
-                            />
+                            
+                            {/* Health Issues Selection */}
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center justify-between">
+                                <label className="text-xs font-medium">Type of Health Issue</label>
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val && !healthMembers[healthIdx]?.healthIssue.includes(val)) {
+                                      const updated = [...(healthMembers[healthIdx]?.healthIssue || []), val];
+                                      updateHealthMember(healthIdx, "healthIssue", updated);
+                                    }
+                                  }}
+                                  className="border rounded p-1 text-xs"
+                                >
+                                  <option value="">+ Add Issue</option>
+                                  {HEALTH_ISSUES.map((issue) => (
+                                    <option key={issue} value={issue}>
+                                      {issue}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {healthMembers[healthIdx]?.healthIssue?.map((issue) => (
+                                  <div key={issue} className="flex items-center gap-1 bg-primary/10 rounded px-2 py-1">
+                                    <span className="text-xs">{issue}</span>
+                                    <button
+                                      onClick={() => {
+                                        const updated = healthMembers[healthIdx]?.healthIssue.filter((i) => i !== issue) || [];
+                                        updateHealthMember(healthIdx, "healthIssue", updated);
+                                      }}
+                                      className="text-xs text-destructive hover:font-bold"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Morbidity Selection */}
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center justify-between">
+                                <label className="text-xs font-medium">Morbidity / Other Health Problems</label>
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val && !healthMembers[healthIdx]?.morbidity.includes(val)) {
+                                      const updated = [...(healthMembers[healthIdx]?.morbidity || []), val];
+                                      updateHealthMember(healthIdx, "morbidity", updated);
+                                    }
+                                  }}
+                                  className="border rounded p-1 text-xs"
+                                >
+                                  <option value="">+ Add Problem</option>
+                                  {MORBIDITY_OPTIONS.map((morbidity) => (
+                                    <option key={morbidity} value={morbidity}>
+                                      {morbidity}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {healthMembers[healthIdx]?.morbidity?.map((morb) => (
+                                  <div key={morb} className="flex items-center gap-1 bg-primary/10 rounded px-2 py-1">
+                                    <span className="text-xs">{morb}</span>
+                                    <button
+                                      onClick={() => {
+                                        const updated = healthMembers[healthIdx]?.morbidity.filter((m) => m !== morb) || [];
+                                        updateHealthMember(healthIdx, "morbidity", updated);
+                                      }}
+                                      className="text-xs text-destructive hover:font-bold"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           </motion.div>
                         </AnimatePresence>
                       </div>

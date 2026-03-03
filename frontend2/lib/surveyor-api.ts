@@ -69,9 +69,9 @@ export interface HealthMemberPayload {
   patientName: string;
   age: number;
   gender: string;
-  healthIssueType: string;
+  healthIssueType: string[];
   otherHealthIssue?: string;
-  hasAdditionalMorbidity: string;
+  hasAdditionalMorbidity: string[];
   additionalMorbidityDetails?: string;
 }
 
