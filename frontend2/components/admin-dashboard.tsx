@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminApiService, type Surveyor, type Village } from "@/lib/admin-api";
-import { LogOut, X, Loader2, Users, MapPin, BarChart3 } from "lucide-react";
+import { SurveyAnalyticsDashboard } from "./survey-analytics-dashboard";
+import { LogOut, X, Loader2, Users, MapPin, BarChart3, TrendingUp } from "lucide-react";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -21,6 +22,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [villages, setVillages] = useState<Village[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   // Load initial data
   useEffect(() => {
@@ -62,6 +64,25 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     );
   }
 
+  if (showAnalytics) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-4 py-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            <h1 className="text-lg font-semibold text-foreground">Analytics</h1>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setShowAnalytics(false)}>
+            <LogOut className="size-4" />
+          </Button>
+        </header>
+        <main className="mx-auto max-w-6xl p-4">
+          <SurveyAnalyticsDashboard onClose={() => setShowAnalytics(false)} />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-4 py-3">
@@ -69,10 +90,21 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           <BarChart3 className="h-5 w-5" />
           <h1 className="text-lg font-semibold text-foreground">Admin Dashboard</h1>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleLogout}>
-          <LogOut className="size-4" />
-          <span className="sr-only">Logout</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowAnalytics(true)}
+            className="text-xs"
+          >
+            <TrendingUp className="size-4 mr-1" />
+            Analytics
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <LogOut className="size-4" />
+            <span className="sr-only">Logout</span>
+          </Button>
+        </div>
       </header>
 
       {error && (
@@ -349,13 +381,21 @@ function SurveyorListSection({ surveyors, villages, onUpdated }: {
   onUpdated: () => void; 
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleStatus = async (surveyorId: string) => {
+  const toggleStatus = async (surveyorId: string, currentStatus: boolean) => {
     try {
-      await AdminApiService.toggleSurveyorStatus(surveyorId);
+      setError(null);
+      setLoadingId(surveyorId);
+      // Toggle the status: if currently active (true), make inactive (false), and vice versa
+      await AdminApiService.toggleSurveyorStatus(surveyorId, !currentStatus);
       onUpdated();
     } catch (error: any) {
+      setError(error.message || 'Failed to toggle status');
       console.error('Failed to toggle status:', error);
+    } finally {
+      setLoadingId(null);
     }
   };
 
@@ -365,6 +405,11 @@ function SurveyorListSection({ surveyors, villages, onUpdated }: {
         <CardTitle className="text-base">Surveyors ({surveyors.length})</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
+        {error && (
+          <div className="p-2 rounded-lg border border-destructive/50 bg-destructive/10">
+            <p className="text-xs text-destructive">{error}</p>
+          </div>
+        )}
         {surveyors.map((surveyor) => (
           <div key={surveyor._id} className="border rounded-lg p-3">
             <div className="flex items-center justify-between">
@@ -386,10 +431,18 @@ function SurveyorListSection({ surveyors, villages, onUpdated }: {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => toggleStatus(surveyor._id)}
+                  onClick={() => toggleStatus(surveyor._id, surveyor.isActive)}
+                  disabled={loadingId === surveyor._id}
                   className="h-6 text-xs"
                 >
-                  {surveyor.isActive ? "Deactivate" : "Activate"}
+                  {loadingId === surveyor._id ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin mr-1" />
+                      Loading...
+                    </>
+                  ) : (
+                    surveyor.isActive ? "Deactivate" : "Activate"
+                  )}
                 </Button>
               </div>
             </div>

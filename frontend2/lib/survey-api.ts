@@ -152,7 +152,7 @@ export class SurveyApiService {
         gender: m.gender ?? '',
         healthIssueType: m.healthIssue,                // UI: healthIssue → backend: healthIssueType
         otherHealthIssue: m.healthIssueOther,          // UI: healthIssueOther → backend: otherHealthIssue
-        hasAdditionalMorbidity: m.morbidity || 'No',  // UI: morbidity → backend: hasAdditionalMorbidity
+        hasAdditionalMorbidity: m.morbidity,          // UI: morbidity → backend: hasAdditionalMorbidity
         additionalMorbidityDetails: m.morbidityOther, // UI: morbidityOther → backend: additionalMorbidityDetails
         // NOTE: hasAadhar, hasAyushman, medicines, hospitalVisits, treatments are UI-only and intentionally excluded
       }));

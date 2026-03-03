@@ -272,11 +272,40 @@ export function SurveyStepper({
     [village]
   );
 
+  // Helper: Get person's gender based on their name from previous sections
+  const getPersonGender = useCallback((personName: string): string => {
+    if (!personName || personName === "Other") return "";
+    
+    // Check if it's the representative
+    if (personName.toLowerCase().trim() === repName.toLowerCase().trim()) {
+      return gender;
+    }
+    
+    // Check health members
+    const healthMatch = healthMembers.find((m) => {
+      const name = m.patient === "Other" ? m.patientName : m.patient;
+      return name && name.toLowerCase().trim() === personName.toLowerCase().trim();
+    });
+    if (healthMatch) return healthMatch.gender || "";
+    
+    // Check education members (for employment section)
+    const eduMatch = eduMembers.find((m) => {
+      const name = m.person === "Other" ? m.name : m.person;
+      return name && name.toLowerCase().trim() === personName.toLowerCase().trim();
+    });
+    if (eduMatch) return eduMatch.gender || "";
+    
+    return "";
+  }, [repName, gender, healthMembers, eduMembers]);
+
   // Health member management
   const addHealthMember = () => {
     if (canAddMember) {
       setHealthMembers([...healthMembers, {
         patient: "",
+        patientName: "",
+        age: undefined,
+        gender: "",
         hasAadhar: "",
         hasAyushman: "",
         healthIssue: "",
@@ -289,7 +318,24 @@ export function SurveyStepper({
   };
 
   const updateHealthMember = (idx: number, field: keyof HealthMember, val: any) => {
-    setHealthMembers(prev => prev.map((m, i) => i === idx ? { ...m, [field]: val } : m));
+    setHealthMembers(prev => {
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], [field]: val };
+      
+      // Auto-fill gender and age if patient field changed and it's not "Other"
+      if (field === "patient" && val && val !== "Other") {
+        // If patient is the representative, auto-fill their gender and age
+        if (val.toLowerCase().trim() === repName.toLowerCase().trim()) {
+          updated[idx].gender = gender;
+          const parsedAge = Number(age);
+          if (!isNaN(parsedAge) && parsedAge > 0) {
+            updated[idx].age = parsedAge;
+          }
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const removeHealthMember = (idx: number) => {
@@ -305,6 +351,9 @@ export function SurveyStepper({
     if (canAddMember) {
       setEduMembers([...eduMembers, {
         person: "",
+        name: "",
+        age: undefined,
+        gender: "",
         hasAadhar: "",
         educationLevel: "",
         schoolType: "",
@@ -316,7 +365,28 @@ export function SurveyStepper({
   };
 
   const updateEduMember = (idx: number, field: keyof EducationMember, val: any) => {
-    setEduMembers(prev => prev.map((m, i) => i === idx ? { ...m, [field]: val } : m));
+    setEduMembers(prev => {
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], [field]: val };
+      
+      // Auto-fill gender, age and name if person field changed and it's not "Other"
+      if (field === "person" && val && val !== "Other") {
+        const autoGender = getPersonGender(val);
+        // Always set the auto-filled gender (will be empty if not found, which will trigger validation)
+        updated[idx].gender = autoGender;
+        
+        // Also try to auto-fill age if available from health members
+        const healthMatch = healthMembers.find((m) => {
+          const name = m.patient === "Other" ? m.patientName : m.patient;
+          return name && name.toLowerCase().trim() === val.toLowerCase().trim();
+        });
+        if (healthMatch && healthMatch.age) {
+          updated[idx].age = healthMatch.age;
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const removeEduMember = (idx: number) => {
@@ -332,6 +402,9 @@ export function SurveyStepper({
     if (canAddMember) {
       setUnempMembers([...unempMembers, {
         person: "",
+        name: "",
+        age: undefined,
+        gender: "",
         hasAadhar: "",
         employmentType: "",
         employmentStatus: "",
@@ -342,7 +415,36 @@ export function SurveyStepper({
   };
 
   const updateUnempMember = (idx: number, field: keyof EmploymentMember, val: any) => {
-    setUnempMembers(prev => prev.map((m, i) => i === idx ? { ...m, [field]: val } : m));
+    setUnempMembers(prev => {
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], [field]: val };
+      
+      // Auto-fill gender, age and name if person field changed and it's not "Other"
+      if (field === "person" && val && val !== "Other") {
+        const autoGender = getPersonGender(val);
+        // Always set the auto-filled gender (will be empty if not found, which will trigger validation)
+        updated[idx].gender = autoGender;
+        
+        // Also try to auto-fill age from health or education members
+        const healthMatch = healthMembers.find((m) => {
+          const name = m.patient === "Other" ? m.patientName : m.patient;
+          return name && name.toLowerCase().trim() === val.toLowerCase().trim();
+        });
+        if (healthMatch && healthMatch.age) {
+          updated[idx].age = healthMatch.age;
+        } else {
+          const eduMatch = eduMembers.find((m) => {
+            const name = m.person === "Other" ? m.name : m.person;
+            return name && name.toLowerCase().trim() === val.toLowerCase().trim();
+          });
+          if (eduMatch && eduMatch.age) {
+            updated[idx].age = eduMatch.age;
+          }
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const removeUnempMember = (idx: number) => {

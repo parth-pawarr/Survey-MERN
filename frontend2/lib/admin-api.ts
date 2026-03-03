@@ -113,8 +113,8 @@ export class AdminApiService {
     return api.put<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}/villages`, { assignedVillages: villages });
   }
 
-  static async toggleSurveyorStatus(id: string) {
-    return api.patch<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}/status`);
+  static async toggleSurveyorStatus(id: string, isActive: boolean) {
+    return api.patch<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}/status`, { isActive });
   }
 
   static async resetSurveyorPassword(id: string, newPassword?: string) {

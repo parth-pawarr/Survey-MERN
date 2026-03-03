@@ -95,7 +95,7 @@ export const MORBIDITY_OPTIONS = [
 ];
 
 export const EDUCATION_LEVELS = [
-  "Not Enrolled",
+  "Not enrolled",
   "Anganwadi",
   "Primary",
   "Secondary",
@@ -106,9 +106,15 @@ export const EDUCATION_LEVELS = [
 ];
 
 export const EDUCATION_ISSUES = [
-  "Financial Problem",
-  "Poor Academic Performance",
-  "Health Issues",
+  "Financial problem",
+  "Transportation issue",
+  "Poor academic performance",
+  "Dropped out",
+  "Lack of digital access",
+  "Lack of books/material",
+  "Health issue",
+  "Family responsibility",
+  "Other",
 ];
 
 export const UNEMPLOYMENT_EDUCATION = [
@@ -121,23 +127,39 @@ export const UNEMPLOYMENT_EDUCATION = [
 ];
 
 export const SKILLS = [
-  "Traditional 12 Balutedar Skills",
+  "Sutar (Carpenter)",
+  "Lohar (Blacksmith)",
+  "Kumbhar (Potter)",
+  "Nhavi (Barber)",
+  "Parit (Washerman)",
+  "Gurav (Temple Servant)",
+  "Jotish (Astrologer/Priest)",
+  "Sonar (Goldsmith)",
+  "Chambhar (Cobbler/Leather worker)",
+  "Mali (Gardener)",
+  "Mang (Village Messenger/Security)",
+  "Teli (Oil Presser)",
   "Farming",
   "Mason",
   "Electrician",
   "Plumbing",
   "Driving",
+  "Computer skills",
+  "Mobile repair",
+  "Handicrafts",
+  "Cooking",
+  "Hardware",
   "Other",
 ];
 
 export const UNEMPLOYMENT_REASONS = [
-  "No Skills",
-  "Low Education",
-  "Health Issue",
-  "No Job Opportunities",
-  "Financial Problems",
-  "Family Responsibilities",
-  "Migration Issue",
+  "No skills",
+  "Low education",
+  "Health issue",
+  "No job opportunities",
+  "Financial problems",
+  "Family responsibilities",
+  "Migration issue",
   "Other",
 ];
 

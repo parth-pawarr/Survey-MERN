@@ -7,7 +7,7 @@ const HealthIssueSchema = new mongoose.Schema({
   gender: { type: String, required: true, enum: ['Male', 'Female', 'Other'] },
   healthIssueType: { type: String, required: true, enum: healthIssues },
   otherHealthIssue: String,
-  hasAdditionalMorbidity: { type: String, required: true, enum: ['Yes', 'No'] },
+  hasAdditionalMorbidity: { type: String, required: true, enum: ['Knee Pain', 'Back Pain', 'Leg Pain', 'Joint Pain', 'Paralysis', 'Other'] },
   additionalMorbidityDetails: String
 });
 
