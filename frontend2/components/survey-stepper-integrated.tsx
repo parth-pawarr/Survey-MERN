@@ -281,12 +281,8 @@ export function SurveyStepper({
         patientName: "",
         age: "",
         gender: "",
-        hasAadhar: "",
         hasAyushman: "",
         healthIssues: [],
-        medicines: [],
-        hospitalVisits: "",
-        treatments: [],
       }]);
     }
   };
@@ -298,14 +294,7 @@ export function SurveyStepper({
         name: "",
         age: "",
         gender: "",
-        hasAadhar: "",
         educationLevel: "",
-        schoolType: "",
-        medium: "",
-        scholarship: "",
-        dropoutReason: "",
-        currentClass: "",
-        schoolName: "",
       }]);
     }
   };
@@ -317,13 +306,8 @@ export function SurveyStepper({
         name: "",
         age: "",
         gender: "",
-        hasAadhar: "",
         employmentType: "",
         employmentStatus: "",
-        businessType: "",
-        businessSector: "",
-        monthlyIncome: "",
-        workLocation: "",
         unemploymentReason: "",
         skills: [],
       }]);

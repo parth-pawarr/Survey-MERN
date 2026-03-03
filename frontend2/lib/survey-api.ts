@@ -26,15 +26,11 @@ export interface HealthMember {
   patientName?: string;      // filled when patient === "Other"
   age?: number;
   gender?: string;
-  hasAadhar: string;         // UI-only, not saved to backend
   hasAyushman: string;       // UI-only, not saved to backend
   healthIssue: string;       // maps → healthIssueType
   healthIssueOther?: string; // maps → otherHealthIssue
   morbidity: string;         // maps → hasAdditionalMorbidity
   morbidityOther?: string;   // maps → additionalMorbidityDetails
-  medicines: string[];       // UI-only, not saved to backend
-  hospitalVisits: string;    // UI-only, not saved to backend
-  treatments: string[];      // UI-only, not saved to backend
 }
 
 // Education member as collected by the stepper UI
@@ -43,14 +39,7 @@ export interface EducationMember {
   name?: string;             // filled when person === "Other"  maps → Name
   age?: number;
   gender?: string;
-  hasAadhar: string;         // UI-only, not saved to backend
   educationLevel: string;    // maps → educationLevel
-  schoolType: string;        // UI-only, not saved to backend
-  medium: string;            // UI-only, not saved to backend
-  scholarship: string;       // UI-only, not saved to backend
-  dropoutReason?: string;    // UI-only, not saved to backend
-  currentClass?: string;     // UI-only, not saved to backend
-  schoolName?: string;       // UI-only, not saved to backend
   educationalIssues: string[]; // maps → educationalIssues
 }
 
@@ -60,13 +49,6 @@ export interface EmploymentMember {
   name?: string;             // filled when person === "Other"  maps → name
   age?: number;
   gender?: string;
-  hasAadhar: string;         // UI-only, not saved to backend
-  employmentType: string;    // UI-only, not saved to backend
-  employmentStatus: string;  // UI-only, not saved to backend
-  businessType?: string;     // UI-only, not saved to backend
-  businessSector?: string;   // UI-only, not saved to backend
-  monthlyIncome?: string;    // UI-only, not saved to backend
-  workLocation?: string;     // UI-only, not saved to backend
   unemploymentReason?: string; // maps → unemploymentReason
   skills: string[];          // maps → skillsKnown
   skillOther?: string;       // maps → otherSkills

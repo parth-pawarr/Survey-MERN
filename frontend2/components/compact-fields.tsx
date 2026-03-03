@@ -236,6 +236,7 @@ export function AgeGenderRow({
         onChange={onAgeChange}
         type="number"
         placeholder="Age"
+        maxLength={3}
       />
       <CompactDropdown
         label="Gender"

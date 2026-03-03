@@ -39,15 +39,11 @@ interface HealthMember {
   patientName?: string;
   age?: number;
   gender?: string;
-  hasAadhar: string;
   hasAyushman: string;
   healthIssue: string;
   healthIssueOther?: string;
   morbidity: string;
   morbidityOther?: string;
-  medicines: string[];
-  hospitalVisits: string;
-  treatments: string[];
 }
 
 interface EducationMember {
@@ -55,14 +51,9 @@ interface EducationMember {
   name?: string;
   age?: number;
   gender?: string;
-  hasAadhar: string;
   educationLevel: string;
-  schoolType: string;
-  medium: string;
-  scholarship: string;
   dropoutReason?: string;
-  currentClass?: string;
-  schoolName?: string;
+  // currentClass?: string;
   educationalIssues: string[];
 }
 
@@ -71,13 +62,8 @@ interface EmploymentMember {
   name?: string;
   age?: number;
   gender?: string;
-  hasAadhar: string;
   employmentType: string;
   employmentStatus: string;
-  businessType?: string;
-  businessSector?: string;
-  monthlyIncome?: string;
-  workLocation?: string;
   unemploymentReason?: string;
   skills: string[];
   skillOther?: string;
@@ -306,13 +292,9 @@ export function SurveyStepper({
         patientName: "",
         age: undefined,
         gender: "",
-        hasAadhar: "",
         hasAyushman: "",
         healthIssue: "",
         morbidity: "",
-        medicines: [],
-        hospitalVisits: "",
-        treatments: [],
       }]);
     }
   };
@@ -354,11 +336,7 @@ export function SurveyStepper({
         name: "",
         age: undefined,
         gender: "",
-        hasAadhar: "",
         educationLevel: "",
-        schoolType: "",
-        medium: "",
-        scholarship: "",
         educationalIssues: [],
       }]);
     }
@@ -405,7 +383,6 @@ export function SurveyStepper({
         name: "",
         age: undefined,
         gender: "",
-        hasAadhar: "",
         employmentType: "",
         employmentStatus: "",
         highestEducation: "",
@@ -653,6 +630,7 @@ export function SurveyStepper({
                     onChange={setTotalMembers}
                     type="number"
                     required
+                    maxLength={2}
                   />
                   <CompactRadioGroup
                     label="Ayushman Card Status"
@@ -669,6 +647,7 @@ export function SurveyStepper({
                       onChange={setAyushmanCount}
                       type="number"
                       required
+                      maxLength={2}
                     />
                   )}
                   <CompactRadioGroup
@@ -762,12 +741,6 @@ export function SurveyStepper({
                               </>
                             )}
                             <CompactRadioGroup
-                              label="Has Aadhar Card?"
-                              value={healthMembers[healthIdx]?.hasAadhar || ""}
-                              onChange={(v) => updateHealthMember(healthIdx, "hasAadhar", v)}
-                              options={["Yes", "No"]}
-                            />
-                            <CompactRadioGroup
                               label="Has Ayushman Card?"
                               value={healthMembers[healthIdx]?.hasAyushman || ""}
                               onChange={(v) => updateHealthMember(healthIdx, "hasAyushman", v)}
@@ -786,14 +759,6 @@ export function SurveyStepper({
                               onChange={(v) => updateHealthMember(healthIdx, "morbidity", v)}
                               options={MORBIDITY_OPTIONS}
                               placeholder="Select morbidity"
-                            />
-                            <CompactInput
-                              label="Hospital Visits in Last Year"
-                              id={`h-visits-${healthIdx}`}
-                              value={healthMembers[healthIdx]?.hospitalVisits || ""}
-                              onChange={(v) => updateHealthMember(healthIdx, "hospitalVisits", v)}
-                              type="number"
-                              placeholder="Number of visits"
                             />
                           </motion.div>
                         </AnimatePresence>
@@ -895,38 +860,12 @@ export function SurveyStepper({
                                 />
                               </>
                             )}
-                            <CompactRadioGroup
-                              label="Has Aadhar Card?"
-                              value={eduMembers[eduIdx]?.hasAadhar || ""}
-                              onChange={(v) => updateEduMember(eduIdx, "hasAadhar", v)}
-                              options={["Yes", "No"]}
-                            />
                             <CompactDropdown
                               label="Current Education Level"
                               value={eduMembers[eduIdx]?.educationLevel || ""}
                               onChange={(v) => updateEduMember(eduIdx, "educationLevel", v)}
                               options={EDUCATION_LEVELS}
                               placeholder="Select level"
-                            />
-                            <CompactDropdown
-                              label="Type of School"
-                              value={eduMembers[eduIdx]?.schoolType || ""}
-                              onChange={(v) => updateEduMember(eduIdx, "schoolType", v)}
-                              options={["Government", "Private", "Other"]}
-                              placeholder="Select school type"
-                            />
-                            <CompactDropdown
-                              label="Medium of Instruction"
-                              value={eduMembers[eduIdx]?.medium || ""}
-                              onChange={(v) => updateEduMember(eduIdx, "medium", v)}
-                              options={["Hindi", "English", "Regional Language", "Other"]}
-                              placeholder="Select medium"
-                            />
-                            <CompactRadioGroup
-                              label="Has Scholarship?"
-                              value={eduMembers[eduIdx]?.scholarship || ""}
-                              onChange={(v) => updateEduMember(eduIdx, "scholarship", v)}
-                              options={["Yes", "No"]}
                             />
                             <CompactCheckboxGroup
                               label="Type of Educational Issue"
@@ -1034,11 +973,12 @@ export function SurveyStepper({
                                 />
                               </>
                             )}
-                            <CompactRadioGroup
-                              label="Has Aadhar Card?"
-                              value={unempMembers[unempIdx]?.hasAadhar || ""}
-                              onChange={(v) => updateUnempMember(unempIdx, "hasAadhar", v)}
-                              options={["Yes", "No"]}
+                            <CompactDropdown
+                              label="Employment Status"
+                              value={unempMembers[unempIdx]?.employmentStatus || ""}
+                              onChange={(v) => updateUnempMember(unempIdx, "employmentStatus", v)}
+                              options={["Employed", "Unemployed", "Underemployed"]}
+                              placeholder="Select status"
                             />
                             <CompactDropdown
                               label="Employment Type"
@@ -1046,13 +986,6 @@ export function SurveyStepper({
                               onChange={(v) => updateUnempMember(unempIdx, "employmentType", v)}
                               options={["Salaried", "Self-Employed", "Daily Wage", "Unemployed", "Other"]}
                               placeholder="Select type"
-                            />
-                            <CompactDropdown
-                              label="Employment Status"
-                              value={unempMembers[unempIdx]?.employmentStatus || ""}
-                              onChange={(v) => updateUnempMember(unempIdx, "employmentStatus", v)}
-                              options={["Employed", "Unemployed", "Underemployed"]}
-                              placeholder="Select status"
                             />
                             <CompactDropdown
                               label="Highest Education Level"
