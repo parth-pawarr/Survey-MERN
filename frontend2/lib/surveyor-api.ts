@@ -19,6 +19,7 @@ export interface Survey {
   _id: string;
   representativeName: string;
   mobileNumber: string;
+  isWhatsAppNumber: string;
   representativeAge: number;
   representativeGender: string;
   totalFamilyMembers: number;
@@ -99,6 +100,7 @@ export interface CreateSurveyRequest {
   // Phase 1 — Household basic info
   representativeName: string;
   mobileNumber: string;
+  isWhatsAppNumber: string;
   representativeAge: number;
   representativeGender: string;
   totalFamilyMembers: number;

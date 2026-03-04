@@ -51,7 +51,7 @@ const HouseholdSurveySchema = new mongoose.Schema({
       message: 'Mobile number must be 10 digits'
     }
   },
-  isWhatsappNumber:{ type: String, required: true, enum: ['Yes', 'No']},
+  isWhatsAppNumber: { type: String, required: true, enum: ['Yes', 'No'] },
   representativeAge: { type: Number, required: true, min: 18, max: 120 },
   representativeGender: { type: String, required: true, enum: ['Male', 'Female', 'Other'] },
   totalFamilyMembers: { type: Number, required: true, min: 1, max: 50 },

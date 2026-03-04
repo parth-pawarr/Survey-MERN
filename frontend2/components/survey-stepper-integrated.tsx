@@ -82,12 +82,12 @@ export function SurveyStepper({
   // Step 1
   const [repName, setRepName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [isWhatsApp, setIsWhatsApp] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [totalMembers, setTotalMembers] = useState("");
   const [ayushmanStatus, setAyushmanStatus] = useState("");
   const [ayushmanCount, setAyushmanCount] = useState("");
-  const [isWhatsApp, setIsWhatsApp] = useState("");
 
   // Step 2
   const [hasHealthIssue, setHasHealthIssue] = useState("");
@@ -113,6 +113,7 @@ export function SurveyStepper({
       household: {
         representativeName: repName,
         mobileNumber: mobile,
+        isWhatsAppNumber: isWhatsApp,
         representativeAge: Number(age),
         representativeGender: gender,
         totalFamilyMembers: Number(totalMembers),
@@ -414,6 +415,12 @@ export function SurveyStepper({
                   {isDuplicate && (
                     <p className="text-xs text-destructive">This number already exists</p>
                   )}
+                  <CompactRadioGroup
+                    label="Is this WhatsApp number?"
+                    options={["Yes", "No"]}
+                    value={isWhatsApp}
+                    onChange={setIsWhatsApp}
+                  />
                   <AgeGenderRow
                     age={age}
                     gender={gender}
@@ -448,12 +455,6 @@ export function SurveyStepper({
                       required
                     />
                   )}
-                  <CompactRadioGroup
-                    label="Is this WhatsApp number?"
-                    options={["Yes", "No"]}
-                    value={isWhatsApp}
-                    onChange={setIsWhatsApp}
-                  />
                 </CardContent>
               </Card>
             )}

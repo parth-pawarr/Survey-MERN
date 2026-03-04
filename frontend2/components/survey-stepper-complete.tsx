@@ -438,6 +438,7 @@ export function SurveyStepper({
       household: {
         representativeName: repName,
         mobileNumber: mobile,
+        isWhatsAppNumber: isWhatsApp, 
         representativeAge: Number(age),
         representativeGender: gender,
         totalFamilyMembers: Number(totalMembers),
@@ -458,7 +459,7 @@ export function SurveyStepper({
       },
     };
   }, [
-    repName, mobile, age, gender, totalMembers, ayushmanStatus, ayushmanCount,
+    repName, mobile, isWhatsApp, age, gender, totalMembers, ayushmanStatus, ayushmanCount,
     hasHealthIssue, healthMembers, hasEduIssue, eduMembers, hasUnemployment, unempMembers
   ]);
 
@@ -1113,7 +1114,7 @@ export function SurveyStepper({
                 onClick={goNext}
                 className="flex-1"
                 disabled={
-                  (step === 1 && (!repName || !mobile || !age || !gender || !totalMembers || !ayushmanStatus || !isWhatsApp)) ||
+                  (step === 1 && (!repName || !mobile || !isWhatsApp || !age || !gender || !totalMembers || !ayushmanStatus)) ||
                   (step === 2 && !hasHealthIssue) ||
                   (step === 3 && !hasEduIssue) ||
                   (step === 4 && !hasUnemployment)

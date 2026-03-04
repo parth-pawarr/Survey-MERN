@@ -13,6 +13,7 @@ import {
 export interface HouseholdData {
   representativeName: string;
   mobileNumber: string;
+  isWhatsAppNumber: string;
   representativeAge: number;
   representativeGender: string;
   totalFamilyMembers: number;
@@ -174,6 +175,7 @@ export class SurveyApiService {
       // Phase 1
       representativeName: household.representativeName,
       mobileNumber: household.mobileNumber,
+      isWhatsAppNumber: household.isWhatsAppNumber,
       representativeAge: household.representativeAge,
       representativeGender: household.representativeGender,
       totalFamilyMembers: household.totalFamilyMembers,
