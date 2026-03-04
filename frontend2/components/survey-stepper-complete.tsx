@@ -745,8 +745,7 @@ export function SurveyStepper({
                               value={healthMembers[healthIdx]?.hasAyushman || ""}
                               onChange={(v) => updateHealthMember(healthIdx, "hasAyushman", v)}
                               options={["Yes", "No"]}
-                            />
-                            
+                            />           
                             {/* Health Issues Selection */}
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
