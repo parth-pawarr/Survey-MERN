@@ -721,6 +721,7 @@ exports.deleteVillage = async (req, res) => {
       }
     });
   } catch (error) {
+    
     res.status(500).json({ message: error.message });
   }
 };
@@ -1329,6 +1330,7 @@ exports.getSurveyAnalytics = async (req, res) => {
     const healthStats = await HouseholdSurvey.aggregate([
       { $match: { ...filter, hasHealthIssues: 'Yes' } },
       { $unwind: '$healthMembers' },
+      { $unwind: '$healthMembers.healthIssueType' },
       {
         $group: {
           _id: '$healthMembers.healthIssueType',
