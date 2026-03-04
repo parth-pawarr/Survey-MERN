@@ -1,0 +1,93 @@
+"use client";
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import { AlertTriangle, Loader2 } from "lucide-react";
+
+interface LoginPageProps {
+  onAdminLogin: () => void;
+  onSurveyorLogin: (surveyor: any) => void;
+}
+
+export function LoginPage({ onAdminLogin, onSurveyorLogin }: LoginPageProps) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const { login, isLoading, error, clearError } = useAuth();
+
+  const handleLogin = async () => {
+    if (!username || !password) {
+      return;
+    }
+
+    try {
+      clearError();
+      await login({ username, password });
+      // AuthContext updates isAuthenticated + user on LOGIN_SUCCESS,
+      // which triggers the useEffect in page.tsx — no reload needed.
+    } catch (error) {
+      // Error is handled and surfaced via AuthContext's error state
+      console.error('Login error:', error);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle className="text-xl text-foreground">Household Survey System</CardTitle>
+          <p className="text-sm text-muted-foreground">Login to continue</p>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          {error && (
+            <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+              <AlertTriangle className="size-4 text-destructive shrink-0" />
+              <p className="text-xs text-destructive font-medium">{error}</p>
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="login-username" className="text-xs">Username</Label>
+            <Input
+              id="login-username"
+              placeholder="Enter username"
+              value={username}
+              onChange={(e) => { setUsername(e.target.value); clearError(); }}
+              className="h-9"
+              disabled={isLoading}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="login-password" className="text-xs">Password</Label>
+            <Input
+              id="login-password"
+              type="password"
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); clearError(); }}
+              className="h-9"
+              onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
+              disabled={isLoading}
+            />
+          </div>
+          <Button
+            onClick={handleLogin}
+            className="mt-1"
+            disabled={isLoading || !username || !password}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Logging in...
+              </>
+            ) : (
+              'Login'
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
