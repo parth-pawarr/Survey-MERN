@@ -102,9 +102,8 @@ function MemberCarouselNav({ total, activeIdx, onSelect }: { total: number; acti
         <button
           key={i}
           onClick={() => onSelect(i)}
-          className={`size-2 rounded-full transition-colors ${
-            i === activeIdx ? "bg-primary" : "bg-border"
-          }`}
+          className={`size-2 rounded-full transition-colors ${i === activeIdx ? "bg-primary" : "bg-border"
+            }`}
           aria-label={`Go to member ${i + 1}`}
         />
       ))}
@@ -179,7 +178,7 @@ export function SurveyStepper({
   const uniqueMemberNames = useMemo(() => {
     const names = new Set<string>();
     if (repName) names.add(repName.toLowerCase().trim());
-    
+
     healthMembers.forEach((m) => {
       if (m.patient === "Other" && m.patientName) {
         names.add(m.patientName.toLowerCase().trim());
@@ -261,26 +260,26 @@ export function SurveyStepper({
   // Helper: Get person's gender based on their name from previous sections
   const getPersonGender = useCallback((personName: string): string => {
     if (!personName || personName === "Other") return "";
-    
+
     // Check if it's the representative
     if (personName.toLowerCase().trim() === repName.toLowerCase().trim()) {
       return gender;
     }
-    
+
     // Check health members
     const healthMatch = healthMembers.find((m) => {
       const name = m.patient === "Other" ? m.patientName : m.patient;
       return name && name.toLowerCase().trim() === personName.toLowerCase().trim();
     });
     if (healthMatch) return healthMatch.gender || "";
-    
+
     // Check education members (for employment section)
     const eduMatch = eduMembers.find((m) => {
       const name = m.person === "Other" ? m.name : m.person;
       return name && name.toLowerCase().trim() === personName.toLowerCase().trim();
     });
     if (eduMatch) return eduMatch.gender || "";
-    
+
     return "";
   }, [repName, gender, healthMembers, eduMembers]);
 
@@ -303,7 +302,7 @@ export function SurveyStepper({
     setHealthMembers(prev => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: val };
-      
+
       // Auto-fill gender and age if patient field changed and it's not "Other"
       if (field === "patient" && val && val !== "Other") {
         // If patient is the representative, auto-fill their gender and age
@@ -315,7 +314,7 @@ export function SurveyStepper({
           }
         }
       }
-      
+
       return updated;
     });
   };
@@ -346,13 +345,13 @@ export function SurveyStepper({
     setEduMembers(prev => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: val };
-      
+
       // Auto-fill gender, age and name if person field changed and it's not "Other"
       if (field === "person" && val && val !== "Other") {
         const autoGender = getPersonGender(val);
         // Always set the auto-filled gender (will be empty if not found, which will trigger validation)
         updated[idx].gender = autoGender;
-        
+
         // Also try to auto-fill age if available from health members
         const healthMatch = healthMembers.find((m) => {
           const name = m.patient === "Other" ? m.patientName : m.patient;
@@ -362,7 +361,7 @@ export function SurveyStepper({
           updated[idx].age = healthMatch.age;
         }
       }
-      
+
       return updated;
     });
   };
@@ -395,13 +394,13 @@ export function SurveyStepper({
     setUnempMembers(prev => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: val };
-      
+
       // Auto-fill gender, age and name if person field changed and it's not "Other"
       if (field === "person" && val && val !== "Other") {
         const autoGender = getPersonGender(val);
         // Always set the auto-filled gender (will be empty if not found, which will trigger validation)
         updated[idx].gender = autoGender;
-        
+
         // Also try to auto-fill age from health or education members
         const healthMatch = healthMembers.find((m) => {
           const name = m.patient === "Other" ? m.patientName : m.patient;
@@ -419,7 +418,7 @@ export function SurveyStepper({
           }
         }
       }
-      
+
       return updated;
     });
   };
@@ -438,7 +437,7 @@ export function SurveyStepper({
       household: {
         representativeName: repName,
         mobileNumber: mobile,
-        isWhatsAppNumber: isWhatsApp, 
+        isWhatsAppNumber: isWhatsApp,
         representativeAge: Number(age),
         representativeGender: gender,
         totalFamilyMembers: Number(totalMembers),
@@ -496,11 +495,11 @@ export function SurveyStepper({
 
       // Submit the survey
       await SurveyApiService.submitSurvey();
-      
+
       // Clear draft
       SurveyApiService.clearDraft();
       SurveyApiService.clearCurrentSurvey();
-      
+
       onComplete();
     } catch (error: any) {
       setError(error.message || 'Failed to submit survey');
@@ -746,7 +745,7 @@ export function SurveyStepper({
                               value={healthMembers[healthIdx]?.hasAyushman || ""}
                               onChange={(v) => updateHealthMember(healthIdx, "hasAyushman", v)}
                               options={["Yes", "No"]}
-                            />           
+                            />
                             {/* Health Issues Selection */}
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
@@ -1045,36 +1044,44 @@ export function SurveyStepper({
                               label="Employment Status"
                               value={unempMembers[unempIdx]?.employmentStatus || ""}
                               onChange={(v) => updateUnempMember(unempIdx, "employmentStatus", v)}
-                              options={["Employed", "Unemployed", "Underemployed"]}
+                              options={["Employed", "Unemployed"]}
                               placeholder="Select status"
                             />
-                            <CompactDropdown
-                              label="Employment Type"
-                              value={unempMembers[unempIdx]?.employmentType || ""}
-                              onChange={(v) => updateUnempMember(unempIdx, "employmentType", v)}
-                              options={["Salaried", "Self-Employed", "Daily Wage", "Unemployed", "Other"]}
-                              placeholder="Select type"
-                            />
-                            <CompactDropdown
-                              label="Highest Education Level"
-                              value={unempMembers[unempIdx]?.highestEducation || ""}
-                              onChange={(v) => updateUnempMember(unempIdx, "highestEducation", v)}
-                              options={UNEMPLOYMENT_EDUCATION}
-                              placeholder="Select level"
-                            />
-                            <CompactCheckboxGroup
-                              label="Skills Known"
-                              selected={unempMembers[unempIdx]?.skills || []}
-                              onChange={(v) => updateUnempMember(unempIdx, "skills", v)}
-                              options={SKILLS}
-                            />
-                            <CompactDropdown
-                              label="Main Reason for Unemployment"
-                              value={unempMembers[unempIdx]?.unemploymentReason || ""}
-                              onChange={(v) => updateUnempMember(unempIdx, "unemploymentReason", v)}
-                              options={UNEMPLOYMENT_REASONS}
-                              placeholder="Select reason"
-                            />
+                            {unempMembers[unempIdx]?.employmentStatus === "Employed" && (
+                              <>
+                                <CompactDropdown
+                                  label="Employment Type"
+                                  value={unempMembers[unempIdx]?.employmentType || ""}
+                                  onChange={(v) => updateUnempMember(unempIdx, "employmentType", v)}
+                                  options={["Salaried", "Self-Employed", "Daily Wage", "Other"]}
+                                  placeholder="Select type"
+                                />
+                              </>
+                            )}
+                            {unempMembers[unempIdx]?.employmentStatus === "Unemployed" && (
+                              <>
+                                <CompactDropdown
+                                  label="Highest Education Level"
+                                  value={unempMembers[unempIdx]?.highestEducation || ""}
+                                  onChange={(v) => updateUnempMember(unempIdx, "highestEducation", v)}
+                                  options={UNEMPLOYMENT_EDUCATION}
+                                  placeholder="Select level"
+                                />
+                                <CompactCheckboxGroup
+                                  label="Skills Known"
+                                  selected={unempMembers[unempIdx]?.skills || []}
+                                  onChange={(v) => updateUnempMember(unempIdx, "skills", v)}
+                                  options={SKILLS}
+                                />
+                                <CompactDropdown
+                                  label="Main Reason for Unemployment"
+                                  value={unempMembers[unempIdx]?.unemploymentReason || ""}
+                                  onChange={(v) => updateUnempMember(unempIdx, "unemploymentReason", v)}
+                                  options={UNEMPLOYMENT_REASONS}
+                                  placeholder="Select reason"
+                                />
+                              </>
+                            )}
                           </motion.div>
                         </AnimatePresence>
                       </div>
