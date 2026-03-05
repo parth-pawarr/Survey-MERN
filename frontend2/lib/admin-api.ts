@@ -223,6 +223,35 @@ export class AdminApiService {
   static async getVerificationStats() {
     return api.get('/admin/verification-stats');
   }
+
+  /**
+   * Aggregates the "+ Add Problem" morbidity field
+   * (healthMembers[].hasAdditionalMorbidity array) from all surveys on the
+   * client side — no backend change required.
+   * Enum values: Knee Pain | Back Pain | Leg Pain | Joint Pain | Paralysis | Other
+   */
+  static async getMorbidityStats(): Promise<{ _id: string; count: number }[]> {
+    try {
+      const data: any = await api.get('/admin/export/surveys?format=json&limit=10000');
+      const surveys: any[] = Array.isArray(data) ? data : (data?.surveys ?? []);
+      const map: Record<string, number> = {};
+      surveys.forEach((survey: any) => {
+        (survey.healthMembers ?? []).forEach((member: any) => {
+          const problems: string[] = Array.isArray(member.hasAdditionalMorbidity)
+            ? member.hasAdditionalMorbidity
+            : [];
+          problems.forEach((p: string) => {
+            if (p) map[p] = (map[p] ?? 0) + 1;
+          });
+        });
+      });
+      return Object.entries(map)
+        .map(([_id, count]) => ({ _id, count }))
+        .sort((a, b) => b.count - a.count);
+    } catch {
+      return [];
+    }
+  }
 }
 
 export default AdminApiService;

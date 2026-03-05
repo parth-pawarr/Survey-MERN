@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import {
   Loader2, Heart, Users, GraduationCap, Briefcase,
-  Activity, RefreshCw, Shield, BarChart3, Download,
+  Activity, RefreshCw, Shield, BarChart3, Download, MapPin, ChevronDown, X, Check,
 } from "lucide-react";
 
 // ─── colour palette ────────────────────────────────────────────────────────────
@@ -33,6 +33,8 @@ const EDU_LEVELS = ["Not Enrolled", "Anganwadi", "Primary", "Secondary", "Higher
 const EDU_PROBLEMS = ["Financial problem", "Transportation issue", "Poor academic performance", "Dropped out", "Lack of digital access", "Lack of books/material", "Health issue", "Family responsibility", "Other"];
 const SKILLS_LIST = ["Farming", "Mason", "Plumbing", "Electrician", "Driving", "Computer skills", "Mobile repair", "Handicrafts", "Cooking", "Hardware", "Sutar (Carpenter)", "Lohar (Blacksmith)", "Kumbhar (Potter)", "Nhavi (Barber)", "Parit (Washerman)", "Other"];
 const UNEMP_REASONS = ["No skills", "Low education", "Health issue", "No job opportunities", "Financial problems", "Family responsibilities", "Migration issue", "Other"];
+// Morbidity sub-conditions from hasAdditionalMorbidity enum in HouseholdSurvey.js
+const MORBIDITY_CATS = ["Knee Pain", "Back Pain", "Leg Pain", "Joint Pain", "Paralysis", "Other"];
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
 const pct = (n: number, total: number) =>
@@ -131,7 +133,7 @@ const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }:
 
 // ─── types ─────────────────────────────────────────────────────────────────────
 interface DashStats { overview: any; surveyStatus: any; villageCoverage: any; recentActivity: any; topSurveyors: any[]; monthlyTrends: any[] }
-interface Analytics { completionTrends: any[]; villageDistribution: any[]; healthStats: any[]; educationStats: any[]; employmentStats: any[]; ayushmanStats: any[]; eduIssueStats?: any[]; skillStats?: any[]; unempReasonStats?: any[]; healthIssueWithout?: any }
+interface Analytics { completionTrends: any[]; villageDistribution: any[]; healthStats: any[]; morbidityStats: any[]; educationStats: any[]; employmentStats: any[]; ayushmanStats: any[]; eduIssueStats?: any[]; skillStats?: any[]; unempReasonStats?: any[] }
 interface PerfData { performanceMetrics: any[]; villageCoverage: any[]; performanceTrends: any[] }
 
 interface Props { onClose: () => void }
@@ -146,6 +148,22 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
   const [err, setErr] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState("healthcare");
+  // ── Village filter state ─────────────────────────────────────────────────
+  const [selectedVillages, setSelectedVillages] = useState<string[]>([]);
+  const [villageList, setVillageList] = useState<string[]>([]);
+  const [villageDropOpen, setVillageDropOpen] = useState(false);
+  const villageDropRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (villageDropRef.current && !villageDropRef.current.contains(e.target as Node)) {
+        setVillageDropOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const exportCSV = async () => {
     try {
@@ -172,13 +190,14 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
     }
   };
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (villages: string[] = []) => {
     try {
       setLoading(true);
       setErr(null);
+      const villageParam = villages.length > 0 ? villages.join(",") : undefined;
       const [d, a, p] = await Promise.all([
         AdminApiService.getDashboardStats(),
-        AdminApiService.getSurveyAnalytics(),
+        AdminApiService.getSurveyAnalytics(undefined, undefined, villageParam),
         AdminApiService.getSurveyorPerformance(),
       ]);
       setDash(d as any);
@@ -192,7 +211,26 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
     }
   }, []);
 
+  // Initial load
   useEffect(() => { load(); }, [load]);
+
+  // Fetch village list once on mount
+  useEffect(() => {
+    AdminApiService.getVillages(1, 200)
+      .then((data: any) => {
+        const list: any[] = data?.villages || (Array.isArray(data) ? data : []);
+        setVillageList(list.map((v: any) => v.name || v._id).filter(Boolean).sort());
+      })
+      .catch(() => { });
+  }, []);
+
+  // Re-fetch analytics when village filter changes (skip initial mount — handled above)
+  const isFirstMount = useRef(true);
+  useEffect(() => {
+    if (isFirstMount.current) { isFirstMount.current = false; return; }
+    load(selectedVillages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVillages]);
 
   if (loading)
     return (
@@ -237,11 +275,10 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
     { name: "No Coverage", value: ayushmanNone, fill: C.coral },
   ].filter((d) => d.value > 0);
 
-  // 3. Morbidity distribution (same data as HC-1, shown as vertical bar with % labels)
-  const morbidityData = healthBarData.map((d) => ({
-    ...d,
-    pct: totalHealthCases > 0 ? Math.round((d.count / totalHealthCases) * 100) : 0,
-  }));
+  // 3. Morbidity Problems (HC-3) — from backend morbidityStats aggregation
+  //    (healthMembers[].hasAdditionalMorbidity — the '+ Add Problem' section)
+  const morbProbData = mergeWithSeeds(analytics.morbidityStats || [], MORBIDITY_CATS);
+  const totalMorbProblems = morbProbData.reduce((s, d) => s + d.count, 0);
 
   // ── EDUCATION derived ────────────────────────────────────────────────────────
   // 1. Education level bar chart
@@ -300,12 +337,101 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
             {exporting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
             Export CSV
           </Button>
-          <Button onClick={load} variant="outline" size="sm" className="h-7 text-xs" disabled={loading}>
+          <Button onClick={() => load(selectedVillages)} variant="outline" size="sm" className="h-7 text-xs" disabled={loading}>
             <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-7 text-xs">Close</Button>
         </div>
+      </div>
+
+      {/* ── Village Filter Bar ────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-muted/40 border">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5" />
+          Village Filter
+        </div>
+
+        {/* Multi-select dropdown */}
+        <div ref={villageDropRef} className="relative">
+          <button
+            onClick={() => setVillageDropOpen(o => !o)}
+            className="flex items-center gap-1.5 h-7 px-3 rounded-lg border bg-background text-xs font-medium hover:bg-muted/60 transition-colors"
+          >
+            {selectedVillages.length === 0
+              ? <span className="text-muted-foreground">All Villages</span>
+              : <span className="text-teal-700">{selectedVillages.length} selected</span>
+            }
+            <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${villageDropOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {villageDropOpen && (
+            <div className="absolute z-50 top-8 left-0 min-w-[180px] max-h-60 overflow-y-auto rounded-xl border bg-popover shadow-lg py-1">
+              {villageList.length === 0 ? (
+                <p className="text-xs text-muted-foreground px-3 py-2">No villages found</p>
+              ) : (
+                villageList.map((v) => {
+                  const checked = selectedVillages.includes(v);
+                  return (
+                    <button
+                      key={v}
+                      onClick={() =>
+                        setSelectedVillages(prev =>
+                          checked ? prev.filter(x => x !== v) : [...prev, v]
+                        )
+                      }
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted/60 transition-colors text-left ${checked ? "font-semibold text-teal-700" : "text-foreground"
+                        }`}
+                    >
+                      <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${checked ? "bg-teal-600 border-teal-600" : "border-input"
+                        }`}>
+                        {checked && <Check className="h-2.5 w-2.5 text-white" />}
+                      </span>
+                      {v}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Selected village badges */}
+        {selectedVillages.map((v) => (
+          <Badge
+            key={v}
+            variant="secondary"
+            className="h-6 text-xs gap-1 pr-1 bg-teal-50 text-teal-800 border border-teal-200"
+          >
+            {v}
+            <button
+              onClick={() => setSelectedVillages(prev => prev.filter(x => x !== v))}
+              className="rounded-full hover:bg-teal-200 p-0.5 transition-colors"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          </Badge>
+        ))}
+
+        {/* Clear all */}
+        {selectedVillages.length > 0 && (
+          <button
+            onClick={() => setSelectedVillages([])}
+            className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+          >
+            Clear all
+          </button>
+        )}
+
+        {/* Filter active indicator */}
+        {selectedVillages.length > 0 && (
+          <span className="ml-auto text-xs text-teal-700 font-medium">
+            Showing data for {selectedVillages.length} village{selectedVillages.length > 1 ? "s" : ""}
+          </span>
+        )}
+        {selectedVillages.length === 0 && (
+          <span className="ml-auto text-xs text-muted-foreground">Showing all villages</span>
+        )}
       </div>
 
       {/* ── KPI Row ────────────────────────────────────────────────────────── */}
@@ -337,25 +463,73 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
         <TabsContent value="healthcare" className="space-y-6 mt-4">
           <SectionCard title="Healthcare Analytics" icon={Heart} color="coral">
 
-            {/* HC-1 ─ Health Issues Bar Chart */}
+            {/* HC-1 ─ Health Issues Horizontal Bar Chart */}
             <ChartCard title="Health Issue Distribution by Condition">
-              {totalHealthCases > 0 ? (
+              <div className="space-y-3">
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={healthBarData} margin={{ left: 0, right: 10, top: 5, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-40} textAnchor="end" interval={0} height={70} />
-                    <YAxis allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""} tick={{ fontSize: 10 }} label={{ value: "Cases", angle: -90, position: "insideLeft", fontSize: 10, offset: 10 }} />
-                    <Tooltip formatter={(v: any) => [v, "Cases"]} />
-                    <Bar dataKey="count" name="Cases" radius={[4, 4, 0, 0]}>
+                  <BarChart
+                    data={healthBarData}
+                    layout="vertical"
+                    margin={{ left: 10, right: 40, top: 5, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      allowDecimals={false}
+                      tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""}
+                      tick={{ fontSize: 10 }}
+                      label={{ value: "Number of Cases", position: "insideBottom", fontSize: 10, offset: -2 }}
+                    />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      tick={{ fontSize: 9 }}
+                      width={130}
+                    />
+                    <Tooltip
+                      formatter={(v: any) => [
+                        `${v} (${totalHealthCases > 0 ? Math.round((v / totalHealthCases) * 100) : 0}%)`,
+                        "Cases",
+                      ]}
+                      cursor={{ fill: "#f1f5f920" }}
+                    />
+                    <Bar dataKey="count" name="Cases" radius={[0, 6, 6, 0]} maxBarSize={28}>
                       {healthBarData.map((_, i) => (
                         <Cell key={i} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
                       ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              ) : (
-                <NoData msg="No health issue data available" />
-              )}
+
+                {/* Summary table */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-2 border-t pt-2">
+                  {healthBarData.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs py-0.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: PIE_PALETTE[i % PIE_PALETTE.length] }}
+                        />
+                        <span className="truncate text-muted-foreground" title={d.name}>{d.name}</span>
+                      </div>
+                      <span className="font-semibold shrink-0 ml-2 tabular-nums">
+                        {d.count}
+                        {d.count > 0 && totalHealthCases > 0 && (
+                          <span className="text-muted-foreground font-normal ml-1">
+                            ({Math.round((d.count / totalHealthCases) * 100)}%)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {totalHealthCases === 0 && (
+                  <p className="text-xs text-center text-muted-foreground py-4">
+                    No health issue data available
+                  </p>
+                )}
+              </div>
             </ChartCard>
 
             {/* HC-2 ─ Ayushman Card Donut */}
@@ -399,61 +573,74 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
               )}
             </ChartCard>
 
-            {/* HC-3 ─ Morbidity Distribution */}
-            <ChartCard title="Morbidity Distribution">
-              {totalHealthCases > 0 ? (
-                <div className="space-y-2">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={morbidityData} margin={{ left: 0, right: 10, top: 10, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: 8 }}
-                        angle={-40}
-                        textAnchor="end"
-                        interval={0}
-                        height={70}
-                      />
-                      <YAxis
-                        allowDecimals={false}
-                        tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""}
-                        tick={{ fontSize: 10 }}
-                        label={{ value: "People", angle: -90, position: "insideLeft", fontSize: 10, offset: 10 }}
-                      />
-                      <Tooltip
-                        formatter={(v: any, _n: any, p: any) => [
-                          `${v} (${p.payload.pct}%)`,
-                          "Affected",
-                        ]}
-                      />
-                      <Bar dataKey="count" name="People" radius={[4, 4, 0, 0]}>
-                        {morbidityData.map((entry, i) => (
-                          <Cell key={i} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  {/* % breakdown legend */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-2 pt-1 border-t">
-                    {morbidityData.filter((d) => d.count > 0).map((d, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ background: PIE_PALETTE[morbidityData.indexOf(d) % PIE_PALETTE.length] }}
-                          />
-                          <span className="truncate text-muted-foreground" title={d.name}>{d.name}</span>
-                        </div>
-                        <span className="font-semibold shrink-0 ml-2">
-                          {d.count} <span className="text-muted-foreground font-normal">({d.pct}%)</span>
-                        </span>
+            {/* HC-3 ─ Morbidity Problems Reported (Horizontal Bar) */}
+            <ChartCard title="Morbidity Problems Reported">
+              <div className="space-y-3">
+                {/* Responsive horizontal bar chart */}
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart
+                    data={morbProbData}
+                    layout="vertical"
+                    margin={{ left: 10, right: 40, top: 5, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      allowDecimals={false}
+                      tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""}
+                      tick={{ fontSize: 10 }}
+                      label={{ value: "Number of Cases", position: "insideBottom", fontSize: 10, offset: -2 }}
+                    />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      tick={{ fontSize: 10 }}
+                      width={85}
+                    />
+                    <Tooltip
+                      formatter={(v: any) => [
+                        `${v} (${totalMorbProblems > 0 ? Math.round((v / totalMorbProblems) * 100) : 0}%)`,
+                        "Cases",
+                      ]}
+                      cursor={{ fill: "#f1f5f920" }}
+                    />
+                    <Bar dataKey="count" name="Cases" radius={[0, 6, 6, 0]} maxBarSize={28}>
+                      {morbProbData.map((_, i) => (
+                        <Cell key={i} fill={PIE_PALETTE[(i + 4) % PIE_PALETTE.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+
+                {/* Summary table below chart */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-2 border-t pt-2">
+                  {morbProbData.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs py-0.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: PIE_PALETTE[(i + 4) % PIE_PALETTE.length] }}
+                        />
+                        <span className="truncate text-muted-foreground">{d.name}</span>
                       </div>
-                    ))}
-                  </div>
+                      <span className="font-semibold shrink-0 ml-2 tabular-nums">
+                        {d.count}
+                        {d.count > 0 && totalMorbProblems > 0 && (
+                          <span className="text-muted-foreground font-normal ml-1">
+                            ({Math.round((d.count / totalMorbProblems) * 100)}%)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <NoData msg="No morbidity data available" />
-              )}
+
+                {totalMorbProblems === 0 && (
+                  <p className="text-xs text-center text-muted-foreground py-4">
+                    No morbidity problems reported yet
+                  </p>
+                )}
+              </div>
             </ChartCard>
 
           </SectionCard>
