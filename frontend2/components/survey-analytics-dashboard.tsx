@@ -33,6 +33,8 @@ const EDU_LEVELS = ["Not Enrolled", "Anganwadi", "Primary", "Secondary", "Higher
 const EDU_PROBLEMS = ["Financial problem", "Transportation issue", "Poor academic performance", "Dropped out", "Lack of digital access", "Lack of books/material", "Health issue", "Family responsibility", "Other"];
 const SKILLS_LIST = ["Farming", "Mason", "Plumbing", "Electrician", "Driving", "Computer skills", "Mobile repair", "Handicrafts", "Cooking", "Hardware", "Sutar (Carpenter)", "Lohar (Blacksmith)", "Kumbhar (Potter)", "Nhavi (Barber)", "Parit (Washerman)", "Other"];
 const UNEMP_REASONS = ["No skills", "Low education", "Health issue", "No job opportunities", "Financial problems", "Family responsibilities", "Migration issue", "Other"];
+// Morbidity sub-conditions from hasAdditionalMorbidity enum in HouseholdSurvey.js
+const MORBIDITY_CATS = ["Knee Pain", "Back Pain", "Leg Pain", "Joint Pain", "Paralysis", "Other"];
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
 const pct = (n: number, total: number) =>
@@ -131,7 +133,7 @@ const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }:
 
 // ─── types ─────────────────────────────────────────────────────────────────────
 interface DashStats { overview: any; surveyStatus: any; villageCoverage: any; recentActivity: any; topSurveyors: any[]; monthlyTrends: any[] }
-interface Analytics { completionTrends: any[]; villageDistribution: any[]; healthStats: any[]; educationStats: any[]; employmentStats: any[]; ayushmanStats: any[]; eduIssueStats?: any[]; skillStats?: any[]; unempReasonStats?: any[]; healthIssueWithout?: any }
+interface Analytics { completionTrends: any[]; villageDistribution: any[]; healthStats: any[]; morbidityStats: any[]; educationStats: any[]; employmentStats: any[]; ayushmanStats: any[]; eduIssueStats?: any[]; skillStats?: any[]; unempReasonStats?: any[] }
 interface PerfData { performanceMetrics: any[]; villageCoverage: any[]; performanceTrends: any[] }
 
 interface Props { onClose: () => void }
@@ -141,6 +143,7 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
   const [dash, setDash] = useState<DashStats | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [perf, setPerf] = useState<PerfData | null>(null);
+  const [morbidityProblems, setMorbidityProblems] = useState<{ _id: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -237,11 +240,10 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
     { name: "No Coverage", value: ayushmanNone, fill: C.coral },
   ].filter((d) => d.value > 0);
 
-  // 3. Morbidity distribution (same data as HC-1, shown as vertical bar with % labels)
-  const morbidityData = healthBarData.map((d) => ({
-    ...d,
-    pct: totalHealthCases > 0 ? Math.round((d.count / totalHealthCases) * 100) : 0,
-  }));
+  // 3. Morbidity Problems (HC-3) — from backend morbidityStats aggregation
+  //    (healthMembers[].hasAdditionalMorbidity — the '+ Add Problem' section)
+  const morbProbData = mergeWithSeeds(analytics.morbidityStats || [], MORBIDITY_CATS);
+  const totalMorbProblems = morbProbData.reduce((s, d) => s + d.count, 0);
 
   // ── EDUCATION derived ────────────────────────────────────────────────────────
   // 1. Education level bar chart
@@ -337,25 +339,73 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
         <TabsContent value="healthcare" className="space-y-6 mt-4">
           <SectionCard title="Healthcare Analytics" icon={Heart} color="coral">
 
-            {/* HC-1 ─ Health Issues Bar Chart */}
+            {/* HC-1 ─ Health Issues Horizontal Bar Chart */}
             <ChartCard title="Health Issue Distribution by Condition">
-              {totalHealthCases > 0 ? (
+              <div className="space-y-3">
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={healthBarData} margin={{ left: 0, right: 10, top: 5, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-40} textAnchor="end" interval={0} height={70} />
-                    <YAxis allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""} tick={{ fontSize: 10 }} label={{ value: "Cases", angle: -90, position: "insideLeft", fontSize: 10, offset: 10 }} />
-                    <Tooltip formatter={(v: any) => [v, "Cases"]} />
-                    <Bar dataKey="count" name="Cases" radius={[4, 4, 0, 0]}>
+                  <BarChart
+                    data={healthBarData}
+                    layout="vertical"
+                    margin={{ left: 10, right: 40, top: 5, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      allowDecimals={false}
+                      tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""}
+                      tick={{ fontSize: 10 }}
+                      label={{ value: "Number of Cases", position: "insideBottom", fontSize: 10, offset: -2 }}
+                    />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      tick={{ fontSize: 9 }}
+                      width={130}
+                    />
+                    <Tooltip
+                      formatter={(v: any) => [
+                        `${v} (${totalHealthCases > 0 ? Math.round((v / totalHealthCases) * 100) : 0}%)`,
+                        "Cases",
+                      ]}
+                      cursor={{ fill: "#f1f5f920" }}
+                    />
+                    <Bar dataKey="count" name="Cases" radius={[0, 6, 6, 0]} maxBarSize={28}>
                       {healthBarData.map((_, i) => (
                         <Cell key={i} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
                       ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              ) : (
-                <NoData msg="No health issue data available" />
-              )}
+
+                {/* Summary table */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-2 border-t pt-2">
+                  {healthBarData.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs py-0.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: PIE_PALETTE[i % PIE_PALETTE.length] }}
+                        />
+                        <span className="truncate text-muted-foreground" title={d.name}>{d.name}</span>
+                      </div>
+                      <span className="font-semibold shrink-0 ml-2 tabular-nums">
+                        {d.count}
+                        {d.count > 0 && totalHealthCases > 0 && (
+                          <span className="text-muted-foreground font-normal ml-1">
+                            ({Math.round((d.count / totalHealthCases) * 100)}%)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {totalHealthCases === 0 && (
+                  <p className="text-xs text-center text-muted-foreground py-4">
+                    No health issue data available
+                  </p>
+                )}
+              </div>
             </ChartCard>
 
             {/* HC-2 ─ Ayushman Card Donut */}
@@ -399,61 +449,74 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
               )}
             </ChartCard>
 
-            {/* HC-3 ─ Morbidity Distribution */}
-            <ChartCard title="Morbidity Distribution">
-              {totalHealthCases > 0 ? (
-                <div className="space-y-2">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={morbidityData} margin={{ left: 0, right: 10, top: 10, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: 8 }}
-                        angle={-40}
-                        textAnchor="end"
-                        interval={0}
-                        height={70}
-                      />
-                      <YAxis
-                        allowDecimals={false}
-                        tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""}
-                        tick={{ fontSize: 10 }}
-                        label={{ value: "People", angle: -90, position: "insideLeft", fontSize: 10, offset: 10 }}
-                      />
-                      <Tooltip
-                        formatter={(v: any, _n: any, p: any) => [
-                          `${v} (${p.payload.pct}%)`,
-                          "Affected",
-                        ]}
-                      />
-                      <Bar dataKey="count" name="People" radius={[4, 4, 0, 0]}>
-                        {morbidityData.map((entry, i) => (
-                          <Cell key={i} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  {/* % breakdown legend */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-2 pt-1 border-t">
-                    {morbidityData.filter((d) => d.count > 0).map((d, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ background: PIE_PALETTE[morbidityData.indexOf(d) % PIE_PALETTE.length] }}
-                          />
-                          <span className="truncate text-muted-foreground" title={d.name}>{d.name}</span>
-                        </div>
-                        <span className="font-semibold shrink-0 ml-2">
-                          {d.count} <span className="text-muted-foreground font-normal">({d.pct}%)</span>
-                        </span>
+            {/* HC-3 ─ Morbidity Problems Reported (Horizontal Bar) */}
+            <ChartCard title="Morbidity Problems Reported">
+              <div className="space-y-3">
+                {/* Responsive horizontal bar chart */}
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart
+                    data={morbProbData}
+                    layout="vertical"
+                    margin={{ left: 10, right: 40, top: 5, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      allowDecimals={false}
+                      tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""}
+                      tick={{ fontSize: 10 }}
+                      label={{ value: "Number of Cases", position: "insideBottom", fontSize: 10, offset: -2 }}
+                    />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      tick={{ fontSize: 10 }}
+                      width={85}
+                    />
+                    <Tooltip
+                      formatter={(v: any) => [
+                        `${v} (${totalMorbProblems > 0 ? Math.round((v / totalMorbProblems) * 100) : 0}%)`,
+                        "Cases",
+                      ]}
+                      cursor={{ fill: "#f1f5f920" }}
+                    />
+                    <Bar dataKey="count" name="Cases" radius={[0, 6, 6, 0]} maxBarSize={28}>
+                      {morbProbData.map((_, i) => (
+                        <Cell key={i} fill={PIE_PALETTE[(i + 4) % PIE_PALETTE.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+
+                {/* Summary table below chart */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-2 border-t pt-2">
+                  {morbProbData.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs py-0.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: PIE_PALETTE[(i + 4) % PIE_PALETTE.length] }}
+                        />
+                        <span className="truncate text-muted-foreground">{d.name}</span>
                       </div>
-                    ))}
-                  </div>
+                      <span className="font-semibold shrink-0 ml-2 tabular-nums">
+                        {d.count}
+                        {d.count > 0 && totalMorbProblems > 0 && (
+                          <span className="text-muted-foreground font-normal ml-1">
+                            ({Math.round((d.count / totalMorbProblems) * 100)}%)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <NoData msg="No morbidity data available" />
-              )}
+
+                {totalMorbProblems === 0 && (
+                  <p className="text-xs text-center text-muted-foreground py-4">
+                    No morbidity problems reported yet
+                  </p>
+                )}
+              </div>
             </ChartCard>
 
           </SectionCard>

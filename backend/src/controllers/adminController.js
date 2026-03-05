@@ -1340,13 +1340,41 @@ exports.getSurveyAnalytics = async (req, res) => {
       { $sort: { count: -1 } }
     ]);
 
-    // Education statistics
+    // Morbidity (additional problems) statistics — from healthMembers.hasAdditionalMorbidity
+    const morbidityStats = await HouseholdSurvey.aggregate([
+      { $match: { ...filter, hasHealthIssues: 'Yes' } },
+      { $unwind: '$healthMembers' },
+      { $unwind: '$healthMembers.hasAdditionalMorbidity' },
+      {
+        $group: {
+          _id: '$healthMembers.hasAdditionalMorbidity',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Education statistics (Level)
     const educationStats = await HouseholdSurvey.aggregate([
       { $match: { ...filter, hasSchoolChildren: 'Yes' } },
       { $unwind: '$educationChildren' },
       {
         $group: {
           _id: '$educationChildren.educationLevel',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Educational Problems statistics — from educationChildren.educationalIssues
+    const eduIssueStats = await HouseholdSurvey.aggregate([
+      { $match: { ...filter, hasSchoolChildren: 'Yes' } },
+      { $unwind: '$educationChildren' },
+      { $unwind: '$educationChildren.educationalIssues' },
+      {
+        $group: {
+          _id: '$educationChildren.educationalIssues',
           count: { $sum: 1 }
         }
       },
@@ -1377,13 +1405,44 @@ exports.getSurveyAnalytics = async (req, res) => {
       }
     ]);
 
+    // Skill statistics (from unemployedMembers.skillsKnown)
+    const skillStats = await HouseholdSurvey.aggregate([
+      { $match: { ...filter, hasUnEmployedMembers: 'Yes' } },
+      { $unwind: '$unemployedMembers' },
+      { $unwind: '$unemployedMembers.skillsKnown' },
+      {
+        $group: {
+          _id: '$unemployedMembers.skillsKnown',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Unemployment Reason statistics (from unemployedMembers.unemploymentReason)
+    const unempReasonStats = await HouseholdSurvey.aggregate([
+      { $match: { ...filter, hasUnEmployedMembers: 'Yes' } },
+      { $unwind: '$unemployedMembers' },
+      {
+        $group: {
+          _id: '$unemployedMembers.unemploymentReason',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
     res.json({
       completionTrends,
       villageDistribution,
       healthStats,
+      morbidityStats,
       educationStats,
+      eduIssueStats,
       employmentStats,
-      ayushmanStats
+      ayushmanStats,
+      skillStats,
+      unempReasonStats
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
