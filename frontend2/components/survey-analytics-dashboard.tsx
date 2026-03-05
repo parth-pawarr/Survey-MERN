@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import {
   Loader2, Heart, Users, GraduationCap, Briefcase,
-  Activity, RefreshCw, Shield, BarChart3, Download,
+  Activity, RefreshCw, Shield, BarChart3, Download, MapPin, ChevronDown, X, Check,
 } from "lucide-react";
 
 // ─── colour palette ────────────────────────────────────────────────────────────
@@ -143,12 +143,27 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
   const [dash, setDash] = useState<DashStats | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [perf, setPerf] = useState<PerfData | null>(null);
-  const [morbidityProblems, setMorbidityProblems] = useState<{ _id: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState("healthcare");
+  // ── Village filter state ─────────────────────────────────────────────────
+  const [selectedVillages, setSelectedVillages] = useState<string[]>([]);
+  const [villageList, setVillageList] = useState<string[]>([]);
+  const [villageDropOpen, setVillageDropOpen] = useState(false);
+  const villageDropRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (villageDropRef.current && !villageDropRef.current.contains(e.target as Node)) {
+        setVillageDropOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const exportCSV = async () => {
     try {
@@ -175,13 +190,14 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
     }
   };
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (villages: string[] = []) => {
     try {
       setLoading(true);
       setErr(null);
+      const villageParam = villages.length > 0 ? villages.join(",") : undefined;
       const [d, a, p] = await Promise.all([
         AdminApiService.getDashboardStats(),
-        AdminApiService.getSurveyAnalytics(),
+        AdminApiService.getSurveyAnalytics(undefined, undefined, villageParam),
         AdminApiService.getSurveyorPerformance(),
       ]);
       setDash(d as any);
@@ -195,7 +211,26 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
     }
   }, []);
 
+  // Initial load
   useEffect(() => { load(); }, [load]);
+
+  // Fetch village list once on mount
+  useEffect(() => {
+    AdminApiService.getVillages(1, 200)
+      .then((data: any) => {
+        const list: any[] = data?.villages || (Array.isArray(data) ? data : []);
+        setVillageList(list.map((v: any) => v.name || v._id).filter(Boolean).sort());
+      })
+      .catch(() => { });
+  }, []);
+
+  // Re-fetch analytics when village filter changes (skip initial mount — handled above)
+  const isFirstMount = useRef(true);
+  useEffect(() => {
+    if (isFirstMount.current) { isFirstMount.current = false; return; }
+    load(selectedVillages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVillages]);
 
   if (loading)
     return (
@@ -302,12 +337,101 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
             {exporting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
             Export CSV
           </Button>
-          <Button onClick={load} variant="outline" size="sm" className="h-7 text-xs" disabled={loading}>
+          <Button onClick={() => load(selectedVillages)} variant="outline" size="sm" className="h-7 text-xs" disabled={loading}>
             <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-7 text-xs">Close</Button>
         </div>
+      </div>
+
+      {/* ── Village Filter Bar ────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-muted/40 border">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5" />
+          Village Filter
+        </div>
+
+        {/* Multi-select dropdown */}
+        <div ref={villageDropRef} className="relative">
+          <button
+            onClick={() => setVillageDropOpen(o => !o)}
+            className="flex items-center gap-1.5 h-7 px-3 rounded-lg border bg-background text-xs font-medium hover:bg-muted/60 transition-colors"
+          >
+            {selectedVillages.length === 0
+              ? <span className="text-muted-foreground">All Villages</span>
+              : <span className="text-teal-700">{selectedVillages.length} selected</span>
+            }
+            <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${villageDropOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {villageDropOpen && (
+            <div className="absolute z-50 top-8 left-0 min-w-[180px] max-h-60 overflow-y-auto rounded-xl border bg-popover shadow-lg py-1">
+              {villageList.length === 0 ? (
+                <p className="text-xs text-muted-foreground px-3 py-2">No villages found</p>
+              ) : (
+                villageList.map((v) => {
+                  const checked = selectedVillages.includes(v);
+                  return (
+                    <button
+                      key={v}
+                      onClick={() =>
+                        setSelectedVillages(prev =>
+                          checked ? prev.filter(x => x !== v) : [...prev, v]
+                        )
+                      }
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted/60 transition-colors text-left ${checked ? "font-semibold text-teal-700" : "text-foreground"
+                        }`}
+                    >
+                      <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${checked ? "bg-teal-600 border-teal-600" : "border-input"
+                        }`}>
+                        {checked && <Check className="h-2.5 w-2.5 text-white" />}
+                      </span>
+                      {v}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Selected village badges */}
+        {selectedVillages.map((v) => (
+          <Badge
+            key={v}
+            variant="secondary"
+            className="h-6 text-xs gap-1 pr-1 bg-teal-50 text-teal-800 border border-teal-200"
+          >
+            {v}
+            <button
+              onClick={() => setSelectedVillages(prev => prev.filter(x => x !== v))}
+              className="rounded-full hover:bg-teal-200 p-0.5 transition-colors"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          </Badge>
+        ))}
+
+        {/* Clear all */}
+        {selectedVillages.length > 0 && (
+          <button
+            onClick={() => setSelectedVillages([])}
+            className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+          >
+            Clear all
+          </button>
+        )}
+
+        {/* Filter active indicator */}
+        {selectedVillages.length > 0 && (
+          <span className="ml-auto text-xs text-teal-700 font-medium">
+            Showing data for {selectedVillages.length} village{selectedVillages.length > 1 ? "s" : ""}
+          </span>
+        )}
+        {selectedVillages.length === 0 && (
+          <span className="ml-auto text-xs text-muted-foreground">Showing all villages</span>
+        )}
       </div>
 
       {/* ── KPI Row ────────────────────────────────────────────────────────── */}

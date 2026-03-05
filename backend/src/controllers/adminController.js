@@ -1284,8 +1284,12 @@ exports.getSurveyAnalytics = async (req, res) => {
 
     // Build additional filters
     const filter = { ...dateFilter };
-    if (village) filter.village = village;
+    if (village) {
+      const villages = village.split(',').map(v => v.trim()).filter(Boolean);
+      filter.village = villages.length === 1 ? villages[0] : { $in: villages };
+    }
     if (surveyor) filter.surveyorId = surveyor;
+
 
     // Survey completion trends
     const completionTrends = await HouseholdSurvey.aggregate([
