@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -172,7 +172,48 @@ export function SurveyStepper({
   const [unempIdx, setUnempIdx] = useState(0);
   const [unempDir, setUnempDir] = useState(1);
 
-  // Compute total unique member count
+  // Swipe-to-navigate for member carousels
+  // One ref per section tracks the X position where the touch started.
+  const healthTouchX = useRef<number | null>(null);
+  const eduTouchX = useRef<number | null>(null);
+  const unempTouchX = useRef<number | null>(null);
+
+  const SWIPE_THRESHOLD = 50; // px — minimum horizontal distance to count as a swipe
+
+  /**
+   * Returns { onTouchStart, onTouchEnd } props for a carousel container.
+   * `touchAction: 'pan-y'` lets the browser keep handling vertical page
+   * scroll while we intercept horizontal swipes only.
+   */
+  const makeSwipeHandlers = (
+    touchRef: React.MutableRefObject<number | null>,
+    idx: number,
+    total: number,
+    setIdx: (i: number) => void,
+    setDir: (d: number) => void
+  ) => ({
+    style: { touchAction: 'pan-y' } as React.CSSProperties,
+    onTouchStart: (e: React.TouchEvent) => {
+      touchRef.current = e.touches[0].clientX;
+    },
+    onTouchEnd: (e: React.TouchEvent) => {
+      if (touchRef.current === null) return;
+      const delta = touchRef.current - e.changedTouches[0].clientX;
+      touchRef.current = null;
+      if (Math.abs(delta) < SWIPE_THRESHOLD) return;
+      if (delta > 0 && idx < total - 1) {
+        // Swiped left → show next member
+        setDir(1);
+        setIdx(idx + 1);
+      } else if (delta < 0 && idx > 0) {
+        // Swiped right → show previous member
+        setDir(-1);
+        setIdx(idx - 1);
+      }
+    },
+  });
+
+
   const totalMemberLimit = Number(totalMembers) || 0;
 
   const uniqueMemberNames = useMemo(() => {
@@ -286,6 +327,7 @@ export function SurveyStepper({
   // Health member management
   const addHealthMember = () => {
     if (canAddMember) {
+      const newIdx = healthMembers.length;
       setHealthMembers([...healthMembers, {
         patient: "",
         patientName: "",
@@ -295,6 +337,9 @@ export function SurveyStepper({
         healthIssue: [],
         morbidity: [],
       }]);
+      // Auto-navigate to the newly added member
+      setHealthDir(1);
+      setHealthIdx(newIdx);
     }
   };
 
@@ -330,6 +375,7 @@ export function SurveyStepper({
   // Education member management
   const addEduMember = () => {
     if (canAddMember) {
+      const newIdx = eduMembers.length;
       setEduMembers([...eduMembers, {
         person: "",
         name: "",
@@ -338,6 +384,9 @@ export function SurveyStepper({
         educationLevel: "",
         educationalIssues: [],
       }]);
+      // Auto-navigate to the newly added member
+      setEduDir(1);
+      setEduIdx(newIdx);
     }
   };
 
@@ -377,6 +426,7 @@ export function SurveyStepper({
   // Employment member management
   const addUnempMember = () => {
     if (canAddMember) {
+      const newIdx = unempMembers.length;
       setUnempMembers([...unempMembers, {
         person: "",
         name: "",
@@ -387,6 +437,9 @@ export function SurveyStepper({
         highestEducation: "",
         skills: [],
       }]);
+      // Auto-navigate to the newly added member
+      setUnempDir(1);
+      setUnempIdx(newIdx);
     }
   };
 
@@ -687,7 +740,10 @@ export function SurveyStepper({
                         activeIdx={healthIdx}
                         onSelect={setHealthIdx}
                       />
-                      <div className="overflow-hidden">
+                      <div
+                        className="overflow-hidden"
+                        {...makeSwipeHandlers(healthTouchX, healthIdx, healthMembers.length, setHealthIdx, setHealthDir)}
+                      >
                         <AnimatePresence mode="wait" custom={healthDir}>
                           <motion.div
                             key={healthIdx}
@@ -874,7 +930,10 @@ export function SurveyStepper({
                         activeIdx={eduIdx}
                         onSelect={setEduIdx}
                       />
-                      <div className="overflow-hidden">
+                      <div
+                        className="overflow-hidden"
+                        {...makeSwipeHandlers(eduTouchX, eduIdx, eduMembers.length, setEduIdx, setEduDir)}
+                      >
                         <AnimatePresence mode="wait" custom={eduDir}>
                           <motion.div
                             key={eduIdx}
@@ -987,7 +1046,10 @@ export function SurveyStepper({
                         activeIdx={unempIdx}
                         onSelect={setUnempIdx}
                       />
-                      <div className="overflow-hidden">
+                      <div
+                        className="overflow-hidden"
+                        {...makeSwipeHandlers(unempTouchX, unempIdx, unempMembers.length, setUnempIdx, setUnempDir)}
+                      >
                         <AnimatePresence mode="wait" custom={unempDir}>
                           <motion.div
                             key={unempIdx}

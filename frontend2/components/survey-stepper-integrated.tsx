@@ -149,7 +149,7 @@ export function SurveyStepper({
   const uniqueMemberNames = useMemo(() => {
     const names = new Set<string>();
     if (repName) names.add(repName.toLowerCase().trim());
-    
+
     healthMembers.forEach((m) => {
       if (m.patient === "Other" && m.patientName) {
         names.add(m.patientName.toLowerCase().trim());
@@ -255,11 +255,11 @@ export function SurveyStepper({
 
       // Submit the survey
       await SurveyApiService.submitSurvey();
-      
+
       // Clear draft
       SurveyApiService.clearDraft();
       SurveyApiService.clearCurrentSurvey();
-      
+
       onComplete();
     } catch (error: any) {
       setError(error.message || 'Failed to submit survey');
@@ -277,6 +277,7 @@ export function SurveyStepper({
   // Member management functions (simplified for now)
   const addHealthMember = () => {
     if (canAddMember) {
+      const newIdx = healthMembers.length;
       setHealthMembers([...healthMembers, {
         patient: "",
         patientName: "",
@@ -285,11 +286,15 @@ export function SurveyStepper({
         hasAyushman: "",
         healthIssues: [],
       }]);
+      // Auto-navigate to the newly added member
+      setHealthDir(1);
+      setHealthIdx(newIdx);
     }
   };
 
   const addEduMember = () => {
     if (canAddMember) {
+      const newIdx = eduMembers.length;
       setEduMembers([...eduMembers, {
         person: "",
         name: "",
@@ -297,11 +302,15 @@ export function SurveyStepper({
         gender: "",
         educationLevel: "",
       }]);
+      // Auto-navigate to the newly added member
+      setEduDir(1);
+      setEduIdx(newIdx);
     }
   };
 
   const addUnempMember = () => {
     if (canAddMember) {
+      const newIdx = unempMembers.length;
       setUnempMembers([...unempMembers, {
         person: "",
         name: "",
@@ -312,6 +321,9 @@ export function SurveyStepper({
         unemploymentReason: "",
         skills: [],
       }]);
+      // Auto-navigate to the newly added member
+      setUnempDir(1);
+      setUnempIdx(newIdx);
     }
   };
 
@@ -471,7 +483,7 @@ export function SurveyStepper({
                     value={hasHealthIssue}
                     onChange={setHasHealthIssue}
                   />
-                  
+
                   {hasHealthIssue === "Yes" && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -487,7 +499,7 @@ export function SurveyStepper({
                           </Button>
                         )}
                       </div>
-                      
+
                       {healthMembers.length === 0 ? (
                         <p className="text-center text-muted-foreground py-4 text-sm">
                           No health members added
@@ -531,7 +543,7 @@ export function SurveyStepper({
                     value={hasEduIssue}
                     onChange={setHasEduIssue}
                   />
-                  
+
                   {hasEduIssue === "Yes" && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -547,7 +559,7 @@ export function SurveyStepper({
                           </Button>
                         )}
                       </div>
-                      
+
                       {eduMembers.length === 0 ? (
                         <p className="text-center text-muted-foreground py-4 text-sm">
                           No education members added
@@ -591,7 +603,7 @@ export function SurveyStepper({
                     value={hasUnemployment}
                     onChange={setHasUnemployment}
                   />
-                  
+
                   {hasUnemployment === "Yes" && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -607,7 +619,7 @@ export function SurveyStepper({
                           </Button>
                         )}
                       </div>
-                      
+
                       {unempMembers.length === 0 ? (
                         <p className="text-center text-muted-foreground py-4 text-sm">
                           No employment members added
