@@ -197,7 +197,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Your Villages</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2">
+            <CardContent className="h-[400px] overflow-y-auto pr-2 flex flex-col gap-2 custom-scrollbar">
               {villages.map((village, index) => (
                 <div
                   key={`${village._id}-${index}`}
@@ -263,7 +263,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
               Recent Surveys ({surveys.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-2">
+          <CardContent className="h-[479px] overflow-y-auto pr-2 flex flex-col gap-2 custom-scrollbar">
             {surveys.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">No surveys yet</p>
             ) : (

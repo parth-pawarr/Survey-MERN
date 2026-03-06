@@ -165,3 +165,21 @@ label,
 .hover\:ring-4:hover { --tw-ring-shadow: none !important; }
 .group-hover\:opacity-100:hover { opacity: inherit !important; }
 .peer-hover\/menu-button\:text-sidebar-accent-foreground:hover { color: inherit !important; }
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.8 0.01 240 / 0.3);
+  border-radius: 20px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0.02 240 / 0.5);
+}
