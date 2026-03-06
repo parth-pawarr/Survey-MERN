@@ -25,7 +25,7 @@ import {
 } from "@/lib/store";
 import { SurveyApiService, type SurveyFormData } from "@/lib/survey-api";
 import { SurveyorApiService } from "@/lib/surveyor-api";
-import { ChevronLeft, ChevronRight, Plus, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, AlertTriangle, Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 interface SurveyStepperProps {
   surveyorId: string;
@@ -140,6 +140,11 @@ export function SurveyStepper({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrefilling, setIsPrefilling] = useState(mode === 'update');
   const [error, setError] = useState<string | null>(null);
+
+  // Mobile validation state
+  const [isValidatingMobile, setIsValidatingMobile] = useState(false);
+  // null = not validated yet, true = available, false = duplicate found
+  const [mobileValidated, setMobileValidated] = useState<boolean | null>(null);
 
   // Load draft on mount (new mode only) OR pre-fill from DB (update mode)
   useEffect(() => {
@@ -379,11 +384,36 @@ export function SurveyStepper({
   const handleMobileChange = useCallback(
     (val: string) => {
       setMobile(val);
-      // TODO: Check for duplicates via API
       setIsDuplicate(false);
+      // Reset validation status whenever the user edits the number
+      setMobileValidated(null);
     },
-    [village]
+    []
   );
+
+  const handleValidateMobile = useCallback(async () => {
+    if (!mobile || mobile.length < 10) return;
+    setIsValidatingMobile(true);
+    setMobileValidated(null);
+    try {
+      const result = await SurveyorApiService.checkMobileNumber(
+        mobile,
+        mode === 'update' ? surveyId : undefined
+      );
+      if (result.exists) {
+        setIsDuplicate(true);
+        setMobileValidated(false);
+      } else {
+        setIsDuplicate(false);
+        setMobileValidated(true);
+      }
+    } catch {
+      // If the check fails, we silently allow the user to continue
+      setMobileValidated(null);
+    } finally {
+      setIsValidatingMobile(false);
+    }
+  }, [mobile, mode, surveyId]);
 
   // Helper: Get person's gender based on their name from previous sections
   const getPersonGender = useCallback((personName: string): string => {
@@ -758,16 +788,55 @@ export function SurveyStepper({
                     onChange={setRepName}
                     required
                   />
-                  <PhoneInput
-                    label="Mobile Number"
-                    id="mobile"
-                    value={mobile}
-                    onChange={handleMobileChange}
-                    required
-                  />
-                  {isDuplicate && (
-                    <p className="text-xs text-destructive">This number already exists</p>
-                  )}
+                  {/* Mobile Number field + inline Validate button */}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <PhoneInput
+                          label="Mobile Number"
+                          id="mobile"
+                          value={mobile}
+                          onChange={handleMobileChange}
+                          required
+                        />
+                      </div>
+                      {/* mt-[1.375rem] skips past the label (text-xs + gap-1) so the
+                          button top-aligns with the input box, not with the label.
+                          This prevents the button from jumping when the error message
+                          below PhoneInput appears or disappears. */}
+                      <div className="mt-[1.375rem] shrink-0">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-3 text-xs"
+                          onClick={handleValidateMobile}
+                          disabled={isValidatingMobile || !mobile || mobile.length < 10}
+                        >
+                          {isValidatingMobile ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            "Validate"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Validation status message */}
+                    {mobileValidated === false && (
+                      <div className="flex items-center gap-1.5 text-xs text-destructive">
+                        <XCircle className="size-3.5 shrink-0" />
+                        <span>Mobile number already used.</span>
+                      </div>
+                    )}
+                    {mobileValidated === true && (
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                        <CheckCircle2 className="size-3.5 shrink-0" />
+                        <span>Mobile number is available.</span>
+                      </div>
+                    )}
+                  </div>
+
                   <CompactRadioGroup
                     label="Is this WhatsApp number?"
                     options={["Yes", "No"]}

@@ -168,6 +168,14 @@ export class SurveyorApiService {
   static async getSurveyHistory(id: string) {
     return api.get(`/surveys/${id}/history`);
   }
+
+  static async checkMobileNumber(mobile: string, excludeSurveyId?: string) {
+    const params = new URLSearchParams({ mobile });
+    if (excludeSurveyId) params.set('excludeSurveyId', excludeSurveyId);
+    return api.get<{ exists: boolean; message?: string; survey?: { id: string; representativeName: string; village: string } }>(
+      `/surveys/check-mobile?${params.toString()}`
+    );
+  }
 }
 
 export default SurveyorApiService;
