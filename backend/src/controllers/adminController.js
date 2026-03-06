@@ -8,7 +8,7 @@ exports.getSurveyors = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    
+
     // Build filter
     const filter = { role: 'surveyor' };
     if (req.query.status === 'active') {
@@ -16,11 +16,11 @@ exports.getSurveyors = async (req, res) => {
     } else if (req.query.status === 'inactive') {
       filter.isActive = false;
     }
-    
+
     if (req.query.village) {
       filter.assignedVillages = { $in: [req.query.village] };
     }
-    
+
     // Get surveyors with pagination
     const surveyors = await User.find(filter)
       .select('-password')
@@ -28,10 +28,10 @@ exports.getSurveyors = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .populate('createdBy', 'username');
-    
+
     // Get total count for pagination
     const total = await User.countDocuments(filter);
-    
+
     // Get performance metrics for each surveyor
     const surveyorsWithMetrics = await Promise.all(
       surveyors.map(async (surveyor) => {
@@ -44,19 +44,19 @@ exports.getSurveyors = async (req, res) => {
             }
           }
         ]);
-        
+
         const stats = {
           total: 0,
           draft: 0,
           submitted: 0,
           verified: 0
         };
-        
+
         surveyStats.forEach(stat => {
           stats[stat._id] = stat.count;
           stats.total += stat.count;
         });
-        
+
         return {
           ...surveyor.toObject(),
           performance: stats,
@@ -64,7 +64,7 @@ exports.getSurveyors = async (req, res) => {
         };
       })
     );
-    
+
     res.json({
       surveyors: surveyorsWithMetrics,
       pagination: {
@@ -82,32 +82,32 @@ exports.getSurveyors = async (req, res) => {
 // Create new surveyor
 exports.createSurveyor = async (req, res) => {
   try {
-    const { 
-      username, 
-      password, 
+    const {
+      username,
+      password,
       assignedVillages = [],
       email,
-      phone 
+      phone
     } = req.body;
-    
+
     // Check if username exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ message: 'Username already exists' });
     }
-    
+
     // Validate assigned villages exist
     if (assignedVillages.length > 0) {
-      const villageCount = await Village.countDocuments({ 
-        name: { $in: assignedVillages } 
+      const villageCount = await Village.countDocuments({
+        name: { $in: assignedVillages }
       });
       if (villageCount !== assignedVillages.length) {
-        return res.status(400).json({ 
-          message: 'One or more assigned villages do not exist' 
+        return res.status(400).json({
+          message: 'One or more assigned villages do not exist'
         });
       }
     }
-    
+
     // Create surveyor
     const surveyor = new User({
       username,
@@ -118,9 +118,9 @@ exports.createSurveyor = async (req, res) => {
       phone,
       createdBy: req.user._id
     });
-    
+
     await surveyor.save();
-    
+
     // Update villages with assigned surveyor
     if (assignedVillages.length > 0) {
       await Village.updateMany(
@@ -128,7 +128,7 @@ exports.createSurveyor = async (req, res) => {
         { $addToSet: { assignedSurveyors: surveyor._id } }
       );
     }
-    
+
     res.status(201).json({
       message: 'Surveyor created successfully',
       surveyor: {
@@ -149,19 +149,19 @@ exports.updateSurveyor = async (req, res) => {
   try {
     const { id } = req.params;
     const { email, phone, isActive } = req.body;
-    
+
     const surveyor = await User.findOne({ _id: id, role: 'surveyor' });
     if (!surveyor) {
       return res.status(404).json({ message: 'Surveyor not found' });
     }
-    
+
     // Update fields
     if (email !== undefined) surveyor.email = email;
     if (phone !== undefined) surveyor.phone = phone;
     if (isActive !== undefined) surveyor.isActive = isActive;
-    
+
     await surveyor.save();
-    
+
     res.json({
       message: 'Surveyor updated successfully',
       surveyor: {
@@ -184,36 +184,36 @@ exports.updateSurveyorVillages = async (req, res) => {
   try {
     const { id } = req.params;
     const { assignedVillages } = req.body;
-    
+
     const surveyor = await User.findOne({ _id: id, role: 'surveyor' });
     if (!surveyor) {
       return res.status(404).json({ message: 'Surveyor not found' });
     }
-    
+
     // Validate all villages exist
     if (assignedVillages.length > 0) {
-      const villageCount = await Village.countDocuments({ 
-        name: { $in: assignedVillages } 
+      const villageCount = await Village.countDocuments({
+        name: { $in: assignedVillages }
       });
       if (villageCount !== assignedVillages.length) {
-        return res.status(400).json({ 
-          message: 'One or more villages do not exist' 
+        return res.status(400).json({
+          message: 'One or more villages do not exist'
         });
       }
     }
-    
+
     const oldVillages = surveyor.assignedVillages;
-    
+
     // Update surveyor villages
     surveyor.assignedVillages = assignedVillages;
     await surveyor.save();
-    
+
     // Remove surveyor from old villages
     await Village.updateMany(
       { name: { $in: oldVillages } },
       { $pull: { assignedSurveyors: surveyor._id } }
     );
-    
+
     // Add surveyor to new villages
     if (assignedVillages.length > 0) {
       await Village.updateMany(
@@ -221,7 +221,7 @@ exports.updateSurveyorVillages = async (req, res) => {
         { $addToSet: { assignedSurveyors: surveyor._id } }
       );
     }
-    
+
     res.json({
       message: 'Villages assigned successfully',
       assignedVillages: surveyor.assignedVillages
@@ -236,15 +236,15 @@ exports.toggleSurveyorStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { isActive } = req.body;
-    
+
     const surveyor = await User.findOne({ _id: id, role: 'surveyor' });
     if (!surveyor) {
       return res.status(404).json({ message: 'Surveyor not found' });
     }
-    
+
     surveyor.isActive = isActive;
     await surveyor.save();
-    
+
     const action = isActive ? 'activated' : 'deactivated';
     res.json({
       message: `Surveyor ${action} successfully`,
@@ -263,15 +263,15 @@ exports.toggleSurveyorStatus = async (req, res) => {
 exports.getSurveyor = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const surveyor = await User.findOne({ _id: id, role: 'surveyor' })
       .select('-password')
       .populate('createdBy', 'username');
-    
+
     if (!surveyor) {
       return res.status(404).json({ message: 'Surveyor not found' });
     }
-    
+
     // Get detailed performance metrics
     const surveyStats = await HouseholdSurvey.aggregate([
       { $match: { surveyorId: surveyor._id } },
@@ -283,7 +283,7 @@ exports.getSurveyor = async (req, res) => {
         }
       }
     ]);
-    
+
     const stats = {
       total: 0,
       draft: 0,
@@ -291,7 +291,7 @@ exports.getSurveyor = async (req, res) => {
       verified: 0,
       avgTimeMinutes: 0
     };
-    
+
     surveyStats.forEach(stat => {
       stats[stat._id] = stat.count;
       stats.total += stat.count;
@@ -299,13 +299,13 @@ exports.getSurveyor = async (req, res) => {
         stats.avgTimeMinutes = Math.round(stat.avgTime / (1000 * 60));
       }
     });
-    
+
     // Get recent surveys
     const recentSurveys = await HouseholdSurvey.find({ surveyorId: surveyor._id })
       .sort({ createdAt: -1 })
       .limit(5)
       .select('representativeName village status createdAt');
-    
+
     res.json({
       surveyor: {
         ...surveyor.toObject(),
@@ -323,21 +323,21 @@ exports.resetSurveyorPassword = async (req, res) => {
   try {
     const { id } = req.params;
     const { newPassword } = req.body;
-    
+
     if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ 
-        message: 'Password must be at least 6 characters long' 
+      return res.status(400).json({
+        message: 'Password must be at least 6 characters long'
       });
     }
-    
+
     const surveyor = await User.findOne({ _id: id, role: 'surveyor' });
     if (!surveyor) {
       return res.status(404).json({ message: 'Surveyor not found' });
     }
-    
+
     surveyor.password = newPassword; // Will be hashed by pre-save hook
     await surveyor.save();
-    
+
     res.json({
       message: 'Password reset successfully',
       surveyor: {
@@ -358,23 +358,23 @@ exports.getVillages = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    
+
     // Build filter
     const filter = {};
     if (req.query.search) {
       filter.name = { $regex: req.query.search, $options: 'i' };
     }
-    
+
     // Get villages with pagination
     const villages = await Village.find(filter)
       .populate('assignedSurveyors', 'username email isActive')
       .sort({ name: 1 })
       .skip(skip)
       .limit(limit);
-    
+
     // Get total count for pagination
     const total = await Village.countDocuments(filter);
-    
+
     // Get survey progress for each village
     const villagesWithProgress = await Promise.all(
       villages.map(async (village) => {
@@ -387,24 +387,24 @@ exports.getVillages = async (req, res) => {
             }
           }
         ]);
-        
+
         const stats = {
           total: 0,
           draft: 0,
           submitted: 0,
           verified: 0
         };
-        
+
         surveyStats.forEach(stat => {
           stats[stat._id] = stat.count;
           stats.total += stat.count;
         });
-        
+
         // Calculate completion percentage
-        const completionRate = village.totalHouseholds > 0 
+        const completionRate = village.totalHouseholds > 0
           ? Math.round((stats.verified / village.totalHouseholds) * 100)
           : 0;
-        
+
         return {
           ...village.toObject(),
           surveyProgress: stats,
@@ -413,7 +413,7 @@ exports.getVillages = async (req, res) => {
         };
       })
     );
-    
+
     res.json({
       villages: villagesWithProgress,
       pagination: {
@@ -431,35 +431,35 @@ exports.getVillages = async (req, res) => {
 // Create new village
 exports.createVillage = async (req, res) => {
   try {
-    const { 
-      name, 
+    const {
+      name,
       totalHouseholds = 0,
       population = 0,
       assignedSurveyors = []
     } = req.body;
-    
+
     // Check if village exists
-    const existingVillage = await Village.findOne({ 
-      name: name.trim().toUpperCase() 
+    const existingVillage = await Village.findOne({
+      name: name.trim().toUpperCase()
     });
     if (existingVillage) {
       return res.status(400).json({ message: 'Village already exists' });
     }
-    
+
     // Validate assigned surveyors exist and are active
     if (assignedSurveyors.length > 0) {
-      const surveyorCount = await User.countDocuments({ 
+      const surveyorCount = await User.countDocuments({
         _id: { $in: assignedSurveyors },
         role: 'surveyor',
         isActive: true
       });
       if (surveyorCount !== assignedSurveyors.length) {
-        return res.status(400).json({ 
-          message: 'One or more surveyors are invalid or inactive' 
+        return res.status(400).json({
+          message: 'One or more surveyors are invalid or inactive'
         });
       }
     }
-    
+
     // Create village
     const village = new Village({
       name: name.trim().toUpperCase(),
@@ -468,9 +468,9 @@ exports.createVillage = async (req, res) => {
       assignedSurveyors,
       createdBy: req.user._id
     });
-    
+
     await village.save();
-    
+
     // Update surveyors with village assignment
     if (assignedSurveyors.length > 0) {
       await User.updateMany(
@@ -478,7 +478,7 @@ exports.createVillage = async (req, res) => {
         { $addToSet: { assignedVillages: village.name } }
       );
     }
-    
+
     res.status(201).json({
       message: 'Village created successfully',
       village: {
@@ -500,40 +500,40 @@ exports.createVillage = async (req, res) => {
 exports.updateVillage = async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      totalHouseholds, 
-      population, 
-      assignedSurveyors 
+    const {
+      totalHouseholds,
+      population,
+      assignedSurveyors
     } = req.body;
-    
+
     const village = await Village.findById(id);
     if (!village) {
       return res.status(404).json({ message: 'Village not found' });
     }
-    
+
     const oldSurveyors = village.assignedSurveyors;
-    
+
     // Validate assigned surveyors if provided
     if (assignedSurveyors && assignedSurveyors.length > 0) {
-      const surveyorCount = await User.countDocuments({ 
+      const surveyorCount = await User.countDocuments({
         _id: { $in: assignedSurveyors },
         role: 'surveyor',
         isActive: true
       });
       if (surveyorCount !== assignedSurveyors.length) {
-        return res.status(400).json({ 
-          message: 'One or more surveyors are invalid or inactive' 
+        return res.status(400).json({
+          message: 'One or more surveyors are invalid or inactive'
         });
       }
     }
-    
+
     // Update fields
     if (totalHouseholds !== undefined) village.totalHouseholds = totalHouseholds;
     if (population !== undefined) village.population = population;
     if (assignedSurveyors !== undefined) village.assignedSurveyors = assignedSurveyors;
-    
+
     await village.save();
-    
+
     // Update surveyor assignments (remove old assignments)
     if (oldSurveyors.length > 0) {
       await User.updateMany(
@@ -541,7 +541,7 @@ exports.updateVillage = async (req, res) => {
         { $pull: { assignedVillages: village.name } }
       );
     }
-    
+
     // Add new assignments
     if (assignedSurveyors && assignedSurveyors.length > 0) {
       await User.updateMany(
@@ -549,7 +549,7 @@ exports.updateVillage = async (req, res) => {
         { $addToSet: { assignedVillages: village.name } }
       );
     }
-    
+
     res.json({
       message: 'Village updated successfully',
       village: {
@@ -572,38 +572,38 @@ exports.assignVillageSurveyors = async (req, res) => {
   try {
     const { id } = req.params;
     const { assignedSurveyors } = req.body;
-    
+
     const village = await Village.findById(id);
     if (!village) {
       return res.status(404).json({ message: 'Village not found' });
     }
-    
+
     // Validate surveyors
     if (assignedSurveyors.length > 0) {
-      const surveyorCount = await User.countDocuments({ 
+      const surveyorCount = await User.countDocuments({
         _id: { $in: assignedSurveyors },
         role: 'surveyor',
         isActive: true
       });
       if (surveyorCount !== assignedSurveyors.length) {
-        return res.status(400).json({ 
-          message: 'One or more surveyors are invalid or inactive' 
+        return res.status(400).json({
+          message: 'One or more surveyors are invalid or inactive'
         });
       }
     }
-    
+
     const oldSurveyors = village.assignedSurveyors;
-    
+
     // Update village
     village.assignedSurveyors = assignedSurveyors;
     await village.save();
-    
+
     // Remove old assignments
     await User.updateMany(
       { _id: { $in: oldSurveyors } },
       { $pull: { assignedVillages: village.name } }
     );
-    
+
     // Add new assignments
     if (assignedSurveyors.length > 0) {
       await User.updateMany(
@@ -611,7 +611,7 @@ exports.assignVillageSurveyors = async (req, res) => {
         { $addToSet: { assignedVillages: village.name } }
       );
     }
-    
+
     res.json({
       message: 'Surveyors assigned successfully',
       assignedSurveyors: village.assignedSurveyors
@@ -625,14 +625,14 @@ exports.assignVillageSurveyors = async (req, res) => {
 exports.getVillage = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const village = await Village.findById(id)
       .populate('assignedSurveyors', 'username email isActive lastLogin');
-    
+
     if (!village) {
       return res.status(404).json({ message: 'Village not found' });
     }
-    
+
     // Get detailed survey statistics
     const surveyStats = await HouseholdSurvey.aggregate([
       { $match: { village: village.name } },
@@ -643,31 +643,31 @@ exports.getVillage = async (req, res) => {
         }
       }
     ]);
-    
+
     const stats = {
       total: 0,
       draft: 0,
       submitted: 0,
       verified: 0
     };
-    
+
     surveyStats.forEach(stat => {
       stats[stat._id] = stat.count;
       stats.total += stat.count;
     });
-    
+
     // Get recent surveys in this village
     const recentSurveys = await HouseholdSurvey.find({ village: village.name })
       .sort({ createdAt: -1 })
       .limit(10)
       .populate('surveyorId', 'username')
       .select('representativeName status createdAt surveyorId');
-    
+
     // Calculate completion rate
-    const completionRate = village.totalHouseholds > 0 
+    const completionRate = village.totalHouseholds > 0
       ? Math.round((stats.verified / village.totalHouseholds) * 100)
       : 0;
-    
+
     res.json({
       village: {
         ...village.toObject(),
@@ -686,33 +686,33 @@ exports.getVillage = async (req, res) => {
 exports.deleteVillage = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const village = await Village.findById(id);
     if (!village) {
       return res.status(404).json({ message: 'Village not found' });
     }
-    
+
     // Check if there are active surveys
-    const activeSurveys = await HouseholdSurvey.countDocuments({ 
+    const activeSurveys = await HouseholdSurvey.countDocuments({
       village: village.name,
       status: { $in: ['Draft', 'Submitted'] }
     });
-    
+
     if (activeSurveys > 0) {
-      return res.status(400).json({ 
-        message: 'Cannot delete village with active surveys. Please complete or reject all surveys first.' 
+      return res.status(400).json({
+        message: 'Cannot delete village with active surveys. Please complete or reject all surveys first.'
       });
     }
-    
+
     // Remove village assignments from all surveyors
     await User.updateMany(
       { assignedVillages: village.name },
       { $pull: { assignedVillages: village.name } }
     );
-    
+
     // Delete the village
     await Village.findByIdAndDelete(id);
-    
+
     res.json({
       message: 'Village deleted successfully',
       village: {
@@ -721,7 +721,7 @@ exports.deleteVillage = async (req, res) => {
       }
     });
   } catch (error) {
-    
+
     res.status(500).json({ message: error.message });
   }
 };
@@ -734,18 +734,18 @@ exports.getSubmittedSurveys = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    
+
     // Build filter
     const filter = { status: 'Submitted' };
-    
+
     if (req.query.village) {
       filter.village = req.query.village;
     }
-    
+
     if (req.query.surveyor) {
       filter.surveyorId = req.query.surveyor;
     }
-    
+
     if (req.query.startDate || req.query.endDate) {
       filter.createdAt = {};
       if (req.query.startDate) {
@@ -755,22 +755,22 @@ exports.getSubmittedSurveys = async (req, res) => {
         filter.createdAt.$lte = new Date(req.query.endDate);
       }
     }
-    
+
     // Get submitted surveys with pagination
     const surveys = await HouseholdSurvey.find(filter)
       .populate('surveyorId', 'username email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     // Get total count for pagination
     const total = await HouseholdSurvey.countDocuments(filter);
-    
+
     // Add data quality checks for each survey
     const surveysWithQualityChecks = await Promise.all(
       surveys.map(async (survey) => {
         const qualityChecks = await performDataQualityChecks(survey);
-        
+
         return {
           ...survey.toObject(),
           qualityChecks,
@@ -778,7 +778,7 @@ exports.getSubmittedSurveys = async (req, res) => {
         };
       })
     );
-    
+
     res.json({
       surveys: surveysWithQualityChecks,
       pagination: {
@@ -797,17 +797,17 @@ exports.getSubmittedSurveys = async (req, res) => {
 exports.getSurveyForReview = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const survey = await HouseholdSurvey.findById(id)
       .populate('surveyorId', 'username email assignedVillages');
-    
+
     if (!survey) {
       return res.status(404).json({ message: 'Survey not found' });
     }
-    
+
     // Perform detailed data quality checks
     const qualityChecks = await performDataQualityChecks(survey);
-    
+
     // Get surveyor performance context
     const surveyorStats = await HouseholdSurvey.aggregate([
       { $match: { surveyorId: survey.surveyorId._id } },
@@ -818,26 +818,26 @@ exports.getSurveyForReview = async (req, res) => {
         }
       }
     ]);
-    
+
     const stats = {
       total: 0,
       draft: 0,
       submitted: 0,
       verified: 0
     };
-    
+
     surveyorStats.forEach(stat => {
       stats[stat._id] = stat.count;
       stats.total += stat.count;
     });
-    
+
     // Check for duplicate mobile numbers in the same village
     const duplicateMobiles = await HouseholdSurvey.find({
       village: survey.village,
       mobileNumber: survey.mobileNumber,
       _id: { $ne: survey._id }
     }).select('representativeName mobileNumber status');
-    
+
     res.json({
       survey: {
         ...survey.toObject(),
@@ -859,32 +859,32 @@ exports.approveSurvey = async (req, res) => {
   try {
     const { id } = req.params;
     const { verificationNotes } = req.body;
-    
+
     const survey = await HouseholdSurvey.findById(id);
     if (!survey) {
       return res.status(404).json({ message: 'Survey not found' });
     }
-    
+
     if (survey.status !== 'Submitted') {
-      return res.status(400).json({ 
-        message: 'Only submitted surveys can be approved' 
+      return res.status(400).json({
+        message: 'Only submitted surveys can be approved'
       });
     }
-    
+
     // Update survey status and add verification details
     survey.status = 'Verified';
     survey.verifiedBy = req.user._id;
     survey.verifiedAt = new Date();
     survey.verificationNotes = verificationNotes || '';
-    
+
     await survey.save();
-    
+
     // Update village surveyed households count
     await Village.updateOne(
       { name: survey.village },
       { $inc: { surveyedHouseholds: 1 } }
     );
-    
+
     res.json({
       message: 'Survey approved successfully',
       survey: {
@@ -904,33 +904,33 @@ exports.rejectSurvey = async (req, res) => {
   try {
     const { id } = req.params;
     const { rejectionReason, verificationNotes } = req.body;
-    
+
     if (!rejectionReason || rejectionReason.trim().length === 0) {
-      return res.status(400).json({ 
-        message: 'Rejection reason is required' 
+      return res.status(400).json({
+        message: 'Rejection reason is required'
       });
     }
-    
+
     const survey = await HouseholdSurvey.findById(id);
     if (!survey) {
       return res.status(404).json({ message: 'Survey not found' });
     }
-    
+
     if (survey.status !== 'Submitted') {
-      return res.status(400).json({ 
-        message: 'Only submitted surveys can be rejected' 
+      return res.status(400).json({
+        message: 'Only submitted surveys can be rejected'
       });
     }
-    
+
     // Update survey status and add rejection details
     survey.status = 'Rejected';
     survey.rejectedBy = req.user._id;
     survey.rejectedAt = new Date();
     survey.rejectionReason = rejectionReason.trim();
     survey.verificationNotes = verificationNotes || '';
-    
+
     await survey.save();
-    
+
     res.json({
       message: 'Survey rejected successfully',
       survey: {
@@ -958,7 +958,7 @@ exports.getVerificationStats = async (req, res) => {
         }
       }
     ]);
-    
+
     const stats = {
       total: 0,
       draft: 0,
@@ -966,24 +966,24 @@ exports.getVerificationStats = async (req, res) => {
       verified: 0,
       rejected: 0
     };
-    
+
     overallStats.forEach(stat => {
       stats[stat._id] = stat.count;
       stats.total += stat.count;
     });
-    
+
     // Pending verification count
     stats.pendingVerification = stats.submitted;
-    
+
     // Verification rate
-    stats.verificationRate = stats.total > 0 
+    stats.verificationRate = stats.total > 0
       ? Math.round((stats.verified / stats.total) * 100)
       : 0;
-    
+
     // Recent verification activity (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
+
     const recentActivity = await HouseholdSurvey.aggregate([
       {
         $match: {
@@ -1005,9 +1005,9 @@ exports.getVerificationStats = async (req, res) => {
         }
       }
     ]);
-    
+
     stats.recentActivity = recentActivity[0] || { approved: 0, rejected: 0 };
-    
+
     // Top performers (surveyors with most verified surveys)
     const topPerformers = await HouseholdSurvey.aggregate([
       { $match: { status: 'Verified' } },
@@ -1035,9 +1035,9 @@ exports.getVerificationStats = async (req, res) => {
         }
       }
     ]);
-    
+
     stats.topPerformers = topPerformers;
-    
+
     res.json(stats);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -1051,64 +1051,64 @@ async function performDataQualityChecks(survey) {
     warnings: [],
     score: 100
   };
-  
+
   // Check for missing required fields
   if (!survey.representativeName || survey.representativeName.trim().length < 2) {
     checks.issues.push('Representative name is too short or missing');
     checks.score -= 20;
   }
-  
+
   if (!survey.mobileNumber || !/^\d{10}$/.test(survey.mobileNumber)) {
     checks.issues.push('Invalid mobile number format');
     checks.score -= 30;
   }
-  
+
   if (survey.representativeAge < 18 || survey.representativeAge > 120) {
     checks.issues.push('Representative age outside valid range (18-120)');
     checks.score -= 15;
   }
-  
+
   if (survey.totalFamilyMembers < 1 || survey.totalFamilyMembers > 50) {
     checks.issues.push('Total family members outside valid range (1-50)');
     checks.score -= 15;
   }
-  
+
   // Check Ayushman card consistency
-  if (survey.ayushmanCardStatus === 'Some Members Have' && 
-      (!survey.ayushmanMembersCount || survey.ayushmanMembersCount <= 0)) {
+  if (survey.ayushmanCardStatus === 'Some Members Have' &&
+    (!survey.ayushmanMembersCount || survey.ayushmanMembersCount <= 0)) {
     checks.issues.push('Ayushman card count required when "Some Members Have" is selected');
     checks.score -= 10;
   }
-  
-  if (survey.ayushmanCardStatus === 'Some Members Have' && 
-      survey.ayushmanMembersCount > survey.totalFamilyMembers) {
+
+  if (survey.ayushmanCardStatus === 'Some Members Have' &&
+    survey.ayushmanMembersCount > survey.totalFamilyMembers) {
     checks.issues.push('Ayushman card count cannot exceed total family members');
     checks.score -= 10;
   }
-  
+
   // Check conditional sections
-  if (survey.hasHealthIssues === 'Yes' && 
-      (!survey.healthMembers || survey.healthMembers.length === 0)) {
+  if (survey.hasHealthIssues === 'Yes' &&
+    (!survey.healthMembers || survey.healthMembers.length === 0)) {
     checks.warnings.push('Health issues marked as Yes but no member details provided');
     checks.score -= 5;
   }
-  
-  if (survey.hasSchoolChildren === 'Yes' && 
-      (!survey.educationChildren || survey.educationChildren.length === 0)) {
+
+  if (survey.hasSchoolChildren === 'Yes' &&
+    (!survey.educationChildren || survey.educationChildren.length === 0)) {
     checks.warnings.push('School children marked as Yes but no child details provided');
     checks.score -= 5;
   }
-  
+
   // Check for potential data entry errors
-  if (survey.totalFamilyMembers === 1 && survey.hasHealthIssues === 'Yes' && 
-      survey.healthMembers && survey.healthMembers.length > 1) {
+  if (survey.totalFamilyMembers === 1 && survey.hasHealthIssues === 'Yes' &&
+    survey.healthMembers && survey.healthMembers.length > 1) {
     checks.warnings.push('More health issue members than total family members');
     checks.score -= 5;
   }
-  
+
   // Ensure score doesn't go below 0
   checks.score = Math.max(0, checks.score);
-  
+
   return checks;
 }
 
@@ -1131,7 +1131,7 @@ exports.getDashboardStats = async (req, res) => {
       HouseholdSurvey.countDocuments(),
       HouseholdSurvey.countDocuments({ status: 'Verified' })
     ]);
-    
+
     // Survey status breakdown
     const surveyStatusStats = await HouseholdSurvey.aggregate([
       {
@@ -1141,18 +1141,18 @@ exports.getDashboardStats = async (req, res) => {
         }
       }
     ]);
-    
+
     const surveyStatus = {
       draft: 0,
       submitted: 0,
       verified: 0,
       rejected: 0
     };
-    
+
     surveyStatusStats.forEach(stat => {
       surveyStatus[stat._id] = stat.count;
     });
-    
+
     // Village coverage statistics
     const villageStats = await Village.aggregate([
       {
@@ -1166,33 +1166,33 @@ exports.getDashboardStats = async (req, res) => {
         }
       }
     ]);
-    
+
     const villageData = villageStats[0] || {
       totalHouseholds: 0,
       surveyedHouseholds: 0,
       villagesWithSurveyors: 0
     };
-    
+
     const coverageRate = villageData.totalHouseholds > 0
       ? Math.round((villageData.surveyedHouseholds / villageData.totalHouseholds) * 100)
       : 0;
-    
+
     // Recent activity (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
+
     const [recentSurveys, recentVerifications] = await Promise.all([
       HouseholdSurvey.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
-      HouseholdSurvey.countDocuments({ 
+      HouseholdSurvey.countDocuments({
         verifiedAt: { $gte: sevenDaysAgo },
         status: 'Verified'
       })
     ]);
-    
+
     // Top performing surveyors (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     const topSurveyors = await HouseholdSurvey.aggregate([
       { $match: { verifiedAt: { $gte: thirtyDaysAgo } } },
       {
@@ -1219,11 +1219,11 @@ exports.getDashboardStats = async (req, res) => {
         }
       }
     ]);
-    
+
     // Monthly survey trends (last 6 months)
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    
+
     const monthlyTrends = await HouseholdSurvey.aggregate([
       { $match: { createdAt: { $gte: sixMonthsAgo } } },
       {
@@ -1240,7 +1240,7 @@ exports.getDashboardStats = async (req, res) => {
       },
       { $sort: { '_id.year': 1, '_id.month': 1 } }
     ]);
-    
+
     res.json({
       overview: {
         totalSurveyors,
@@ -1273,7 +1273,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getSurveyAnalytics = async (req, res) => {
   try {
     const { startDate, endDate, village, surveyor } = req.query;
-    
+
     // Build date filter
     const dateFilter = {};
     if (startDate || endDate) {
@@ -1281,12 +1281,15 @@ exports.getSurveyAnalytics = async (req, res) => {
       if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
       if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
     }
-    
+
     // Build additional filters
     const filter = { ...dateFilter };
-    if (village) filter.village = village;
+    if (village) {
+      const villages = village.split(',').map(v => v.trim()).filter(Boolean);
+      filter.village = villages.length === 1 ? villages[0] : { $in: villages };
+    }
     if (surveyor) filter.surveyorId = surveyor;
-    
+
     // Survey completion trends
     const completionTrends = await HouseholdSurvey.aggregate([
       { $match: filter },
@@ -1309,7 +1312,7 @@ exports.getSurveyAnalytics = async (req, res) => {
       { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
       { $limit: 30 }
     ]);
-    
+
     // Village-wise survey distribution
     const villageDistribution = await HouseholdSurvey.aggregate([
       { $match: filter },
@@ -1325,7 +1328,7 @@ exports.getSurveyAnalytics = async (req, res) => {
       { $sort: { total: -1 } },
       { $limit: 10 }
     ]);
-    
+
     // Health issues statistics
     const healthStats = await HouseholdSurvey.aggregate([
       { $match: { ...filter, hasHealthIssues: 'Yes' } },
@@ -1339,8 +1342,22 @@ exports.getSurveyAnalytics = async (req, res) => {
       },
       { $sort: { count: -1 } }
     ]);
-    
-    // Education statistics
+
+    // Morbidity (additional problems) statistics — from healthMembers.hasAdditionalMorbidity
+    const morbidityStats = await HouseholdSurvey.aggregate([
+      { $match: { ...filter, hasHealthIssues: 'Yes' } },
+      { $unwind: '$healthMembers' },
+      { $unwind: '$healthMembers.hasAdditionalMorbidity' },
+      {
+        $group: {
+          _id: '$healthMembers.hasAdditionalMorbidity',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Education statistics (Level)
     const educationStats = await HouseholdSurvey.aggregate([
       { $match: { ...filter, hasSchoolChildren: 'Yes' } },
       { $unwind: '$educationChildren' },
@@ -1352,7 +1369,21 @@ exports.getSurveyAnalytics = async (req, res) => {
       },
       { $sort: { count: -1 } }
     ]);
-    
+
+    // Educational Problems statistics — from educationChildren.educationalIssues
+    const eduIssueStats = await HouseholdSurvey.aggregate([
+      { $match: { ...filter, hasSchoolChildren: 'Yes' } },
+      { $unwind: '$educationChildren' },
+      { $unwind: '$educationChildren.educationalIssues' },
+      {
+        $group: {
+          _id: '$educationChildren.educationalIssues',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
     // Employment statistics
     const employmentStats = await HouseholdSurvey.aggregate([
       { $match: { ...filter, hasEmployedMembers: 'Yes' } },
@@ -1365,7 +1396,7 @@ exports.getSurveyAnalytics = async (req, res) => {
       },
       { $sort: { count: -1 } }
     ]);
-    
+
     // Ayushman card coverage
     const ayushmanStats = await HouseholdSurvey.aggregate([
       { $match: filter },
@@ -1376,14 +1407,45 @@ exports.getSurveyAnalytics = async (req, res) => {
         }
       }
     ]);
-    
+
+    // Skill statistics (from unemployedMembers.skillsKnown)
+    const skillStats = await HouseholdSurvey.aggregate([
+      { $match: { ...filter, hasUnEmployedMembers: 'Yes' } },
+      { $unwind: '$unemployedMembers' },
+      { $unwind: '$unemployedMembers.skillsKnown' },
+      {
+        $group: {
+          _id: '$unemployedMembers.skillsKnown',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Unemployment Reason statistics (from unemployedMembers.unemploymentReason)
+    const unempReasonStats = await HouseholdSurvey.aggregate([
+      { $match: { ...filter, hasUnEmployedMembers: 'Yes' } },
+      { $unwind: '$unemployedMembers' },
+      {
+        $group: {
+          _id: '$unemployedMembers.unemploymentReason',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
     res.json({
       completionTrends,
       villageDistribution,
       healthStats,
+      morbidityStats,
       educationStats,
+      eduIssueStats,
       employmentStats,
-      ayushmanStats
+      ayushmanStats,
+      skillStats,
+      unempReasonStats
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -1394,7 +1456,7 @@ exports.getSurveyAnalytics = async (req, res) => {
 exports.getSurveyorPerformance = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     // Build date filter
     const dateFilter = {};
     if (startDate || endDate) {
@@ -1402,7 +1464,7 @@ exports.getSurveyorPerformance = async (req, res) => {
       if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
       if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
     }
-    
+
     // Surveyor performance metrics
     const performanceMetrics = await HouseholdSurvey.aggregate([
       { $match: dateFilter },
@@ -1452,7 +1514,7 @@ exports.getSurveyorPerformance = async (req, res) => {
       },
       { $sort: { verifiedSurveys: -1 } }
     ]);
-    
+
     // Surveyor village coverage
     const villageCoverage = await User.aggregate([
       { $match: { role: 'surveyor' } },
@@ -1466,11 +1528,11 @@ exports.getSurveyorPerformance = async (req, res) => {
       },
       { $sort: { villageCount: -1 } }
     ]);
-    
+
     // Performance trends (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     const performanceTrends = await HouseholdSurvey.aggregate([
       { $match: { ...dateFilter, createdAt: { $gte: thirtyDaysAgo } } },
       {
@@ -1504,7 +1566,7 @@ exports.getSurveyorPerformance = async (req, res) => {
       },
       { $sort: { date: 1, username: 1 } }
     ]);
-    
+
     res.json({
       performanceMetrics,
       villageCoverage,
@@ -1521,24 +1583,24 @@ exports.getSurveyorPerformance = async (req, res) => {
 exports.exportSurveyData = async (req, res) => {
   try {
     const { format = 'json', village, surveyor, status, startDate, endDate } = req.query;
-    
+
     // Build filter
     const filter = {};
     if (village) filter.village = village;
     if (surveyor) filter.surveyorId = surveyor;
     if (status) filter.status = status;
-    
+
     if (startDate || endDate) {
       filter.createdAt = {};
       if (startDate) filter.createdAt.$gte = new Date(startDate);
       if (endDate) filter.createdAt.$lte = new Date(endDate);
     }
-    
+
     // Get survey data with populated fields
     const surveys = await HouseholdSurvey.find(filter)
       .populate('surveyorId', 'username email')
       .sort({ createdAt: -1 });
-    
+
     // Transform data for export
     const exportData = surveys.map(survey => ({
       id: survey._id,
@@ -1560,7 +1622,7 @@ exports.exportSurveyData = async (req, res) => {
       latitude: survey.latitude,
       longitude: survey.longitude
     }));
-    
+
     if (format === 'csv') {
       // Convert to CSV
       const csv = convertToCSV(exportData);
@@ -1568,7 +1630,7 @@ exports.exportSurveyData = async (req, res) => {
       res.setHeader('Content-Disposition', 'attachment; filename=survey_data.csv');
       return res.send(csv);
     }
-    
+
     // Default to JSON
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename=survey_data.json');
@@ -1582,7 +1644,7 @@ exports.exportSurveyData = async (req, res) => {
 exports.exportSurveyorPerformance = async (req, res) => {
   try {
     const { format = 'json', startDate, endDate } = req.query;
-    
+
     // Build date filter
     const dateFilter = {};
     if (startDate || endDate) {
@@ -1590,7 +1652,7 @@ exports.exportSurveyorPerformance = async (req, res) => {
       if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
       if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
     }
-    
+
     // Get surveyor performance data
     const performanceData = await HouseholdSurvey.aggregate([
       { $match: dateFilter },
@@ -1644,14 +1706,14 @@ exports.exportSurveyorPerformance = async (req, res) => {
       },
       { $sort: { verifiedSurveys: -1 } }
     ]);
-    
+
     if (format === 'csv') {
       const csv = convertToCSV(performanceData);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=surveyor_performance.csv');
       return res.send(csv);
     }
-    
+
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename=surveyor_performance.json');
     res.json(performanceData);
@@ -1664,7 +1726,7 @@ exports.exportSurveyorPerformance = async (req, res) => {
 exports.exportVillageStats = async (req, res) => {
   try {
     const { format = 'json' } = req.query;
-    
+
     // Get village statistics
     const villageStats = await Village.aggregate([
       {
@@ -1742,14 +1804,14 @@ exports.exportVillageStats = async (req, res) => {
       },
       { $sort: { name: 1 } }
     ]);
-    
+
     if (format === 'csv') {
       const csv = convertToCSV(villageStats);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=village_statistics.csv');
       return res.send(csv);
     }
-    
+
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename=village_statistics.json');
     res.json(villageStats);
@@ -1761,10 +1823,10 @@ exports.exportVillageStats = async (req, res) => {
 // Helper function to convert JSON to CSV
 function convertToCSV(data) {
   if (!data || data.length === 0) return '';
-  
+
   const headers = Object.keys(data[0]);
   const csvHeaders = headers.join(',');
-  
+
   const csvRows = data.map(row => {
     return headers.map(header => {
       const value = row[header];
@@ -1779,6 +1841,6 @@ function convertToCSV(data) {
       return value || '';
     }).join(',');
   });
-  
+
   return [csvHeaders, ...csvRows].join('\n');
 }

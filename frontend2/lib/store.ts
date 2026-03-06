@@ -46,12 +46,12 @@ export interface SurveyData {
   householdData: {
     representativeName: string;
     mobile: string;
+    isWhatsApp: string;
     age: number;
     gender: string;
     totalFamilyMembers: number;
     ayushmanStatus: string;
     ayushmanMembersCount?: number;
-    isWhatsApp?: string;
   };
   healthcare: HealthMember[];
   education: EducationMember[];
@@ -127,18 +127,7 @@ export const UNEMPLOYMENT_EDUCATION = [
 ];
 
 export const SKILLS = [
-  "Sutar (Carpenter)",
-  "Lohar (Blacksmith)",
-  "Kumbhar (Potter)",
-  "Nhavi (Barber)",
-  "Parit (Washerman)",
-  "Gurav (Temple Servant)",
-  "Jotish (Astrologer/Priest)",
-  "Sonar (Goldsmith)",
-  "Chambhar (Cobbler/Leather worker)",
-  "Mali (Gardener)",
-  "Mang (Village Messenger/Security)",
-  "Teli (Oil Presser)",
+  "12 Balutedar (बारा बलुतेदार) ",
   "Farming",
   "Mason",
   "Electrician",

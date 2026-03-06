@@ -12,7 +12,7 @@ type AppScreen =
   | { type: "login" }
   | { type: "admin" }
   | { type: "surveyor"; surveyor: any }
-  | { type: "survey"; surveyorId: string; village: string; surveyor: any };
+  | { type: "survey"; surveyorId: string; village: string; surveyor: any; surveyId?: string; mode?: 'new' | 'update' };
 
 export default function Page() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -63,6 +63,8 @@ export default function Page() {
       <SurveyStepper
         surveyorId={screen.surveyorId}
         village={screen.village}
+        surveyId={screen.surveyId}
+        mode={screen.mode || 'new'}
         onComplete={() => setScreen({ type: "surveyor", surveyor: screen.surveyor })}
         onCancel={() => setScreen({ type: "surveyor", surveyor: screen.surveyor })}
       />
@@ -74,8 +76,8 @@ export default function Page() {
       <SurveyorDashboard
         surveyor={screen.surveyor}
         onLogout={() => setScreen({ type: "login" })}
-        onStartSurvey={(surveyorId, village) =>
-          setScreen({ type: "survey", surveyorId, village, surveyor: screen.surveyor })
+        onStartSurvey={(surveyorId, village, surveyId, mode) =>
+          setScreen({ type: "survey", surveyorId, village, surveyor: screen.surveyor, surveyId, mode })
         }
       />
     );

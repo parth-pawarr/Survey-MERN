@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { SurveyorApiService, type Village, type Survey, type SurveyorStats } from "@/lib/surveyor-api";
-import { LogOut, MapPin, Award, Loader2, FileText } from "lucide-react";
+import { LogOut, MapPin, Award, Loader2, FileText, Edit, AlertTriangle } from "lucide-react";
 
 interface SurveyorDashboardProps {
   surveyor: any;
   onLogout: () => void;
-  onStartSurvey: (surveyorId: string, village: string) => void;
+  onStartSurvey: (surveyorId: string, village: string, surveyId?: string, mode?: 'new' | 'update') => void;
 }
 
 export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: SurveyorDashboardProps) {
@@ -40,12 +40,12 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const [villagesResponse, statsResponse] = await Promise.all([
         SurveyorApiService.getAssignedVillages(),
         SurveyorApiService.getSurveyorStats()
       ]);
-      
+
       setVillages(villagesResponse);
       setStats(statsResponse);
     } catch (error: any) {
@@ -78,9 +78,17 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
 
   const handleStartSurvey = () => {
     if (selectedVillage) {
-      onStartSurvey(surveyor.id, selectedVillage);
+      onStartSurvey(surveyor.id, selectedVillage, undefined, 'new');
     }
   };
+
+
+  const handleUpdateSurvey = (surveyId: string) => {
+    if (selectedVillage) {
+      onStartSurvey(surveyor.id, selectedVillage, surveyId, 'update');
+    }
+  };
+
 
   if (showPerformance && stats) {
     return (
@@ -261,7 +269,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
             ) : (
               surveys.map((survey) => (
                 <div key={survey._id} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-medium text-sm">{survey.representativeName}</p>
                       <p className="text-xs text-muted-foreground">{survey.mobileNumber}</p>
@@ -269,16 +277,31 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
                         {survey.totalFamilyMembers} family members
                       </p>
                     </div>
-                    <Badge 
+                    <Badge
                       variant={
                         survey.status === 'Verified' ? 'default' :
-                        survey.status === 'Submitted' ? 'secondary' :
-                        survey.status === 'Rejected' ? 'destructive' : 'outline'
+                          survey.status === 'Submitted' ? 'secondary' :
+                            survey.status === 'Rejected' ? 'destructive' : 'outline'
                       }
                     >
                       {survey.status}
                     </Badge>
                   </div>
+
+                  {/* Action Buttons — Update available for Draft / Submitted / Rejected */}
+                  {survey.status !== 'Verified' && (
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleUpdateSurvey(survey._id)}
+                        className="flex-1 gap-1 h-7 text-xs"
+                      >
+                        <Edit className="size-3" />
+                        Update
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -290,16 +313,16 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
 }
 
 // Performance View Component
-function SurveyorPerformance({ 
-  stats, 
-  villages, 
-  onBack, 
-  onLogout 
-}: { 
-  stats: SurveyorStats; 
-  villages: Village[]; 
-  onBack: () => void; 
-  onLogout: () => void; 
+function SurveyorPerformance({
+  stats,
+  villages,
+  onBack,
+  onLogout
+}: {
+  stats: SurveyorStats;
+  villages: Village[];
+  onBack: () => void;
+  onLogout: () => void;
 }) {
   return (
     <div className="min-h-screen bg-background">
