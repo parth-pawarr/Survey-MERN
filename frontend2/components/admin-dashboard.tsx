@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,25 +156,44 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </Card>
         </div>
 
-        {/* A. Add Surveyor (basic info only — no village assignment here) */}
-        <AddSurveyorSection onSurveyorAdded={loadInitialData} />
+        {/* Tab Navigation */}
+        <Tabs defaultValue="surveyors">
+          <TabsList className="flex flex-wrap gap-1 h-auto bg-muted/60 p-1 rounded-xl">
+            {[
+              { v: "surveyors", label: "👥 Surveyor" },
+              { v: "add-surveyor", label: "➕ Add Surveyor" },
+              { v: "add-village", label: "🏘️ Add Village" },
+            ].map((t) => (
+              <TabsTrigger
+                key={t.v}
+                value={t.v}
+                className="text-xs px-3 py-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {/* B. Add Village */}
-        <AddVillageSection onVillageAdded={loadInitialData} />
+          {/* Surveyor List Tab */}
+          <TabsContent value="surveyors" className="mt-4">
+            <SurveyorListSection
+              surveyors={surveyors}
+              villages={villages}
+              onUpdated={loadInitialData}
+            />
+          </TabsContent>
 
-        {/* C. Surveyors — with inline Assign Village panel */}
-        <SurveyorListSection
-          surveyors={surveyors}
-          villages={villages}
-          onUpdated={loadInitialData}
-        />
+          {/* Add Surveyor Tab */}
+          <TabsContent value="add-surveyor" className="mt-4">
+            <AddSurveyorSection onSurveyorAdded={loadInitialData} />
+          </TabsContent>
 
-        {/* D. Village Management */}
-        <VillageManagementSection
-          villages={villages}
-          surveyors={surveyors}
-          onUpdated={loadInitialData}
-        />
+          {/* Add Village Tab */}
+          <TabsContent value="add-village" className="mt-4">
+            <AddVillageSection onVillageAdded={loadInitialData} />
+          </TabsContent>
+        </Tabs>
+
       </main>
     </div>
   );
@@ -585,131 +605,3 @@ function AssignVillagesPanel({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// D. Village Management Section
-// ─────────────────────────────────────────────────────────────────────────────
-function VillageManagementSection({
-  villages,
-  surveyors,
-  onUpdated,
-}: {
-  villages: Village[];
-  surveyors: Surveyor[];
-  onUpdated: () => void;
-}) {
-  const [expandedVillage, setExpandedVillage] = useState<string | null>(null);
-  const [loadingVillage, setLoadingVillage] = useState<string | null>(null);
-
-  const handleAssignSurveyor = async (villageId: string, surveyorIds: string[]) => {
-    try {
-      setLoadingVillage(villageId);
-      await AdminApiService.assignVillageSurveyors(villageId, surveyorIds);
-      onUpdated();
-    } catch (error: any) {
-      console.error("Failed to assign surveyors:", error);
-    } finally {
-      setLoadingVillage(null);
-    }
-  };
-
-  if (villages.length === 0) {
-    return (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Villages</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center text-muted-foreground py-4">
-            No villages created yet. Add one above!
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Villages ({villages.length})</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2">
-        {villages.map((village) => (
-          <div key={village._id} className="border rounded-lg p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">{village.name}</p>
-                <div className="flex gap-1 mt-1">
-                  {village.assignedSurveyors.slice(0, 3).map((surveyorId: string) => {
-                    const surveyor = surveyors.find((s: Surveyor) => s._id === surveyorId);
-                    return surveyor ? (
-                      <Badge key={surveyorId} variant="outline" className="text-xs">
-                        {surveyor.username}
-                      </Badge>
-                    ) : null;
-                  })}
-                  {village.assignedSurveyors.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{village.assignedSurveyors.length - 3}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  setExpandedVillage(expandedVillage === village._id ? null : village._id)
-                }
-                className="h-7 text-xs"
-                disabled={loadingVillage === village._id}
-              >
-                {loadingVillage === village._id ? (
-                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                ) : null}
-                Assign Surveyors
-              </Button>
-            </div>
-
-            {expandedVillage === village._id && (
-              <div className="mt-3 pt-3 border-t">
-                <p className="text-xs font-medium mb-2">
-                  Surveyors assigned to {village.name}:
-                </p>
-                <div className="flex flex-col gap-2">
-                  {surveyors.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No surveyors available</p>
-                  ) : (
-                    <>
-                      <select
-                        multiple
-                        value={village.assignedSurveyors || []}
-                        onChange={(e) => {
-                          const selected = Array.from(
-                            e.target.selectedOptions,
-                            (option) => option.value
-                          );
-                          handleAssignSurveyor(village._id, selected);
-                        }}
-                        disabled={loadingVillage === village._id}
-                        className="border rounded p-2 text-xs bg-white max-h-40"
-                      >
-                        {surveyors.map((surveyor) => (
-                          <option key={surveyor._id} value={surveyor._id}>
-                            {surveyor.username}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-muted-foreground">
-                        (Hold Ctrl/Cmd to select multiple)
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}

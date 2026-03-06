@@ -1,19 +1,23 @@
 const express = require('express');
 const { protect } = require('../middlewares/auth');
-const { 
-  getSurveys, 
-  createSurvey, 
-  getSurvey, 
-  updateSurvey, 
+const {
+  getSurveys,
+  createSurvey,
+  getSurvey,
+  updateSurvey,
   submitSurvey,
   deleteSurvey,
   getSurveyorStats,
-  getSurveyHistory
+  getSurveyHistory,
+  checkMobileNumber,
 } = require('../controllers/surveyController');
 const router = express.Router({ mergeParams: true });
 
 // ALL routes protected - surveyor must be logged in
 router.use(protect);
+
+// Mobile number duplicate check (must be before /:id routes)
+router.get('/check-mobile', checkMobileNumber);
 
 router.get('/', getSurveys);
 router.post('/', createSurvey);
