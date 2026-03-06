@@ -196,7 +196,7 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
       setErr(null);
       const villageParam = villages.length > 0 ? villages.join(",") : undefined;
       const [d, a, p] = await Promise.all([
-        AdminApiService.getDashboardStats(),
+        AdminApiService.getDashboardStats(villageParam),
         AdminApiService.getSurveyAnalytics(undefined, undefined, villageParam),
         AdminApiService.getSurveyorPerformance(),
       ]);

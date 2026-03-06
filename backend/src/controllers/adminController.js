@@ -1117,7 +1117,23 @@ async function performDataQualityChecks(survey) {
 // Get dashboard overview statistics
 exports.getDashboardStats = async (req, res) => {
   try {
-    // Get basic counts
+    // Build optional village filter for survey-level counts
+    const villageFilter = {};
+    // Build surveyor filter — when villages are selected, only count surveyors
+    // whose assignedVillages contains at least one of the selected villages
+    const surveyorVillageFilter = {};
+    if (req.query.village) {
+      const villages = req.query.village.split(',').map(v => v.trim()).filter(Boolean);
+      if (villages.length === 1) {
+        villageFilter.village = villages[0];
+        surveyorVillageFilter.assignedVillages = villages[0];
+      } else if (villages.length > 1) {
+        villageFilter.village = { $in: villages };
+        surveyorVillageFilter.assignedVillages = { $in: villages };
+      }
+    }
+
+    // Get basic counts — surveyor counts respect the village filter
     const [
       totalSurveyors,
       activeSurveyors,
@@ -1125,15 +1141,16 @@ exports.getDashboardStats = async (req, res) => {
       totalSurveys,
       verifiedSurveys
     ] = await Promise.all([
-      User.countDocuments({ role: 'surveyor' }),
-      User.countDocuments({ role: 'surveyor', isActive: true }),
+      User.countDocuments({ role: 'surveyor', ...surveyorVillageFilter }),
+      User.countDocuments({ role: 'surveyor', isActive: true, ...surveyorVillageFilter }),
       Village.countDocuments(),
-      HouseholdSurvey.countDocuments(),
-      HouseholdSurvey.countDocuments({ status: 'Verified' })
+      HouseholdSurvey.countDocuments(villageFilter),
+      HouseholdSurvey.countDocuments({ ...villageFilter, status: 'Verified' })
     ]);
 
     // Survey status breakdown
     const surveyStatusStats = await HouseholdSurvey.aggregate([
+      { $match: villageFilter },
       {
         $group: {
           _id: '$status',
@@ -1182,8 +1199,9 @@ exports.getDashboardStats = async (req, res) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const [recentSurveys, recentVerifications] = await Promise.all([
-      HouseholdSurvey.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      HouseholdSurvey.countDocuments({ ...villageFilter, createdAt: { $gte: sevenDaysAgo } }),
       HouseholdSurvey.countDocuments({
+        ...villageFilter,
         verifiedAt: { $gte: sevenDaysAgo },
         status: 'Verified'
       })
@@ -1194,7 +1212,7 @@ exports.getDashboardStats = async (req, res) => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const topSurveyors = await HouseholdSurvey.aggregate([
-      { $match: { verifiedAt: { $gte: thirtyDaysAgo } } },
+      { $match: { ...villageFilter, verifiedAt: { $gte: thirtyDaysAgo } } },
       {
         $group: {
           _id: '$surveyorId',
@@ -1225,7 +1243,7 @@ exports.getDashboardStats = async (req, res) => {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     const monthlyTrends = await HouseholdSurvey.aggregate([
-      { $match: { createdAt: { $gte: sixMonthsAgo } } },
+      { $match: { ...villageFilter, createdAt: { $gte: sixMonthsAgo } } },
       {
         $group: {
           _id: {

@@ -152,8 +152,11 @@ export class AdminApiService {
   }
 
   // Dashboard Analytics
-  static async getDashboardStats() {
-    return api.get<DashboardStats>('/admin/dashboard/stats');
+  static async getDashboardStats(village?: string) {
+    const params = new URLSearchParams();
+    if (village) params.append('village', village);
+    const qs = params.toString();
+    return api.get<DashboardStats>(`/admin/dashboard/stats${qs ? `?${qs}` : ''}`);
   }
 
   static async getSurveyAnalytics(startDate?: string, endDate?: string, village?: string, surveyor?: string) {
