@@ -24,11 +24,14 @@ import {
   GENDERS,
 } from "@/lib/store";
 import { SurveyApiService, type SurveyFormData } from "@/lib/survey-api";
+import { SurveyorApiService } from "@/lib/surveyor-api";
 import { ChevronLeft, ChevronRight, Plus, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 
 interface SurveyStepperProps {
   surveyorId: string;
   village: string;
+  surveyId?: string;           // provided when mode is 'update'
+  mode?: 'new' | 'continue' | 'update';
   onComplete: () => void;
   onCancel: () => void;
 }
@@ -125,6 +128,8 @@ function MemberLimitWarning() {
 export function SurveyStepper({
   surveyorId,
   village,
+  surveyId,
+  mode = 'new',
   onComplete,
   onCancel,
 }: SurveyStepperProps) {
@@ -133,16 +138,97 @@ export function SurveyStepper({
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPrefilling, setIsPrefilling] = useState(mode === 'update');
   const [error, setError] = useState<string | null>(null);
 
-  // Load draft on mount
+  // Load draft on mount (new mode only) OR pre-fill from DB (update mode)
   useEffect(() => {
-    const draft = SurveyApiService.loadDraft();
-    if (draft) {
-      // TODO: Load draft data into form state
-      console.log('Draft found:', draft);
+    if (mode === 'update' && surveyId) {
+      // Fetch existing survey and pre-fill all form fields
+      SurveyorApiService.getSurvey(surveyId).then((s: any) => {
+        const repN = s.representativeName || '';
+        const repG = s.representativeGender || '';
+        const repA = String(s.representativeAge || '');
+
+        // Step 1 — Household
+        setRepName(repN);
+        setMobile(s.mobileNumber || '');
+        setIsWhatsApp(s.isWhatsAppNumber || '');
+        setAge(repA);
+        setGender(repG);
+        setTotalMembers(String(s.totalFamilyMembers || ''));
+        setAyushmanStatus(s.ayushmanCardStatus || '');
+        const ac = s.ayushmanMembersCount;
+        setAyushmanCount(ac != null && ac !== 0 ? String(ac) : '');
+
+        // Step 2 — Health
+        setHasHealthIssue(s.hasHealthIssues || '');
+        if (Array.isArray(s.healthMembers) && s.healthMembers.length > 0) {
+          setHealthMembers(s.healthMembers.map((m: any) => {
+            const isRep = (m.patientName || '').toLowerCase().trim() === repN.toLowerCase().trim();
+            return {
+              patient: isRep ? repN : 'Other',
+              patientName: isRep ? '' : (m.patientName || ''),
+              age: m.age,
+              gender: m.gender || '',
+              hasAyushman: '',
+              healthIssue: Array.isArray(m.healthIssueType) ? m.healthIssueType : [],
+              healthIssueOther: m.otherHealthIssue || '',
+              morbidity: Array.isArray(m.hasAdditionalMorbidity) ? m.hasAdditionalMorbidity : [],
+              morbidityOther: m.additionalMorbidityDetails || '',
+            };
+          }));
+        }
+
+        // Step 3 — Education
+        setHasEduIssue(s.hasSchoolChildren || '');
+        if (Array.isArray(s.educationChildren) && s.educationChildren.length > 0) {
+          setEduMembers(s.educationChildren.map((c: any) => {
+            const isRep = (c.Name || '').toLowerCase().trim() === repN.toLowerCase().trim();
+            return {
+              person: isRep ? repN : 'Other',
+              name: isRep ? '' : (c.Name || ''),
+              age: c.age,
+              gender: c.gender || '',
+              educationLevel: c.educationLevel || '',
+              educationalIssues: Array.isArray(c.educationalIssues) ? c.educationalIssues : [],
+            };
+          }));
+        }
+
+        // Step 4 — Employment
+        setHasUnemployment(s.hasUnEmployedMembers || '');
+        if (Array.isArray(s.unemployedMembers) && s.unemployedMembers.length > 0) {
+          setUnempMembers(s.unemployedMembers.map((u: any) => {
+            const isRep = (u.name || '').toLowerCase().trim() === repN.toLowerCase().trim();
+            return {
+              person: isRep ? repN : 'Other',
+              name: isRep ? '' : (u.name || ''),
+              age: u.age,
+              gender: u.gender || '',
+              employmentType: '',
+              employmentStatus: 'Unemployed',
+              highestEducation: u.highestEducation || '',
+              unemploymentReason: u.unemploymentReason || '',
+              skills: Array.isArray(u.skillsKnown) ? u.skillsKnown : [],
+              skillOther: u.otherSkills || '',
+            };
+          }));
+        }
+      }).catch((err: any) => {
+        console.error('Failed to load survey for update:', err);
+        setError('Failed to load survey data. Please go back and try again.');
+      }).finally(() => {
+        setIsPrefilling(false);
+      });
+    } else if (mode !== 'update') {
+      const draft = SurveyApiService.loadDraft();
+      if (draft) {
+        console.log('Draft found:', draft);
+      }
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surveyId, mode]);
 
   // Step 1
   const [repName, setRepName] = useState("");
@@ -515,11 +601,12 @@ export function SurveyStepper({
     hasHealthIssue, healthMembers, hasEduIssue, eduMembers, hasUnemployment, unempMembers
   ]);
 
-  // Auto-save draft
+  // Auto-save draft (only for new/continue mode — not update mode)
   useEffect(() => {
+    if (mode === 'update') return;   // skip: update hits the DB directly on Submit
     const formData = getCurrentFormData();
     SurveyApiService.saveDraft(formData, village);
-  }, [getCurrentFormData, village]);
+  }, [getCurrentFormData, village, mode]);
 
   const goNext = () => {
     setDirection(1);
@@ -539,15 +626,18 @@ export function SurveyStepper({
       const formData = getCurrentFormData();
       const requestData = SurveyApiService.formDataToRequest(formData, village);
 
-      // Create or update survey
-      if (!SurveyApiService.getCurrentSurveyId()) {
+      if (mode === 'update' && surveyId) {
+        // Update existing survey in-place via PUT /surveys/:id
+        await SurveyorApiService.updateSurvey(surveyId, requestData as any);
+        // Re-submit to mark as Submitted
+        await SurveyorApiService.submitSurvey(surveyId);
+      } else if (!SurveyApiService.getCurrentSurveyId()) {
         await SurveyApiService.createSurvey(requestData);
+        await SurveyApiService.submitSurvey();
       } else {
         await SurveyApiService.updateSurvey(requestData);
+        await SurveyApiService.submitSurvey();
       }
-
-      // Submit the survey
-      await SurveyApiService.submitSurvey();
 
       // Clear draft
       SurveyApiService.clearDraft();
@@ -606,6 +696,16 @@ export function SurveyStepper({
         </div>
       )}
 
+      {/* Loading overlay while pre-filling update data */}
+      {isPrefilling && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading survey data...</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-4 py-3">
         <div className="flex items-center gap-2">
@@ -619,7 +719,7 @@ export function SurveyStepper({
             {step > 1 ? "Back" : "Cancel"}
           </Button>
           <div className="text-sm font-medium text-foreground">
-            Step {step} of 4
+            {mode === 'update' ? 'Update Survey' : 'New Survey'} — Step {step} of 4
           </div>
         </div>
         <div className="text-xs text-muted-foreground">{village}</div>
@@ -1183,10 +1283,18 @@ export function SurveyStepper({
                 onClick={goNext}
                 className="flex-1"
                 disabled={
-                  (step === 1 && (!repName || !mobile || !isWhatsApp || !age || !gender || !totalMembers || !ayushmanStatus)) ||
-                  (step === 2 && !hasHealthIssue) ||
-                  (step === 3 && !hasEduIssue) ||
-                  (step === 4 && !hasUnemployment)
+                  // In update mode: data is pre-filled from an existing valid survey,
+                  // so only block if isPrefilling (data still loading). 
+                  isPrefilling ||
+                  // In new mode: enforce per-step field validation.
+                  (mode !== 'update' && (
+                    (step === 1 && (
+                      !repName || !mobile || !isWhatsApp || !age || !gender || !totalMembers || !ayushmanStatus ||
+                      (ayushmanStatus === 'Some Members Have' && !ayushmanCount)
+                    )) ||
+                    (step === 2 && !hasHealthIssue) ||
+                    (step === 3 && !hasEduIssue)
+                  ))
                 }
               >
                 Next
@@ -1205,15 +1313,15 @@ export function SurveyStepper({
               <Button
                 onClick={handleSubmit}
                 className="flex-1"
-                disabled={isSubmitting || !hasUnemployment}
+                disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="size-4 mr-2 animate-spin" />
-                    Submitting...
+                    {mode === 'update' ? 'Saving...' : 'Submitting...'}
                   </>
                 ) : (
-                  "Submit Survey"
+                  mode === 'update' ? 'Save & Submit' : 'Submit Survey'
                 )}
               </Button>
             </>

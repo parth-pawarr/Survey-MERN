@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { SurveyorApiService, type Village, type Survey, type SurveyorStats } from "@/lib/surveyor-api";
-import { LogOut, MapPin, Award, Loader2, FileText, Play, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { LogOut, MapPin, Award, Loader2, FileText, Edit, AlertTriangle } from "lucide-react";
 
 interface SurveyorDashboardProps {
   surveyor: any;
   onLogout: () => void;
-  onStartSurvey: (surveyorId: string, village: string, surveyId?: string, mode?: 'new' | 'continue' | 'update') => void;
+  onStartSurvey: (surveyorId: string, village: string, surveyId?: string, mode?: 'new' | 'update') => void;
 }
 
 export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: SurveyorDashboardProps) {
@@ -30,8 +30,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPerformance, setShowPerformance] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -42,12 +40,12 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const [villagesResponse, statsResponse] = await Promise.all([
         SurveyorApiService.getAssignedVillages(),
         SurveyorApiService.getSurveyorStats()
       ]);
-      
+
       setVillages(villagesResponse);
       setStats(statsResponse);
     } catch (error: any) {
@@ -84,11 +82,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
     }
   };
 
-  const handleContinueSurvey = (surveyId: string) => {
-    if (selectedVillage) {
-      onStartSurvey(surveyor.id, selectedVillage, surveyId, 'continue');
-    }
-  };
 
   const handleUpdateSurvey = (surveyId: string) => {
     if (selectedVillage) {
@@ -96,24 +89,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
     }
   };
 
-  const handleDeleteSurvey = async (surveyId: string) => {
-    if (!confirm('Are you sure you want to delete this survey? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      setDeletingId(surveyId);
-      setDeleteError(null);
-      await SurveyorApiService.deleteSurvey(surveyId);
-      
-      // Remove from local state
-      setSurveys(prev => prev.filter(s => s._id !== surveyId));
-    } catch (error: any) {
-      setDeleteError(error.message || 'Failed to delete survey');
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   if (showPerformance && stats) {
     return (
@@ -289,11 +264,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {deleteError && (
-              <div className="p-2 rounded-lg border border-destructive/50 bg-destructive/10">
-                <p className="text-xs text-destructive">{deleteError}</p>
-              </div>
-            )}
             {surveys.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">No surveys yet</p>
             ) : (
@@ -307,55 +277,30 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
                         {survey.totalFamilyMembers} family members
                       </p>
                     </div>
-                    <Badge 
+                    <Badge
                       variant={
                         survey.status === 'Verified' ? 'default' :
-                        survey.status === 'Submitted' ? 'secondary' :
-                        survey.status === 'Rejected' ? 'destructive' : 'outline'
+                          survey.status === 'Submitted' ? 'secondary' :
+                            survey.status === 'Rejected' ? 'destructive' : 'outline'
                       }
                     >
                       {survey.status}
                     </Badge>
                   </div>
 
-                  {/* Action Buttons */}
-                  {survey.status === 'Submitted' ? (
+                  {/* Action Buttons — Update available for Draft / Submitted / Rejected */}
+                  {survey.status !== 'Verified' && (
                     <div className="flex gap-2 mt-3">
-                      <Button
-                        size="sm"
-                        onClick={() => handleContinueSurvey(survey._id)}
-                        disabled={deletingId === survey._id}
-                        className="flex-1 gap-1 h-7 text-xs"
-                      >
-                        <Play className="size-3" />
-                        Continue
-                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleUpdateSurvey(survey._id)}
-                        disabled={deletingId === survey._id}
                         className="flex-1 gap-1 h-7 text-xs"
                       >
                         <Edit className="size-3" />
                         Update
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDeleteSurvey(survey._id)}
-                        disabled={deletingId === survey._id}
-                        className="h-7 px-2"
-                      >
-                        {deletingId === survey._id ? (
-                          <Loader2 className="size-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="size-3" />
-                        )}
-                      </Button>
                     </div>
-                  ) : (
-                    <> </>
                   )}
                 </div>
               ))
@@ -368,16 +313,16 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
 }
 
 // Performance View Component
-function SurveyorPerformance({ 
-  stats, 
-  villages, 
-  onBack, 
-  onLogout 
-}: { 
-  stats: SurveyorStats; 
-  villages: Village[]; 
-  onBack: () => void; 
-  onLogout: () => void; 
+function SurveyorPerformance({
+  stats,
+  villages,
+  onBack,
+  onLogout
+}: {
+  stats: SurveyorStats;
+  villages: Village[];
+  onBack: () => void;
+  onLogout: () => void;
 }) {
   return (
     <div className="min-h-screen bg-background">

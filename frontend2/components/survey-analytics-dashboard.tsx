@@ -246,7 +246,7 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {err || "Failed to load analytics"}
         </div>
-        <Button onClick={load} variant="outline" size="sm">
+        <Button onClick={() => load(selectedVillages)} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" /> Retry
         </Button>
       </div>
