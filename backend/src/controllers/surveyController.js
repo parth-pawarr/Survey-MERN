@@ -235,3 +235,41 @@ exports.getSurveyHistory = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Check if a mobile number already exists in any survey
+exports.checkMobileNumber = async (req, res) => {
+  try {
+    const { mobile, excludeSurveyId } = req.query;
+
+    if (!mobile) {
+      return res.status(400).json({ message: 'Mobile number is required' });
+    }
+
+    const query = { mobileNumber: mobile.trim() };
+
+    // When editing a survey, exclude the current survey so it doesn't
+    // flag itself as a duplicate
+    if (excludeSurveyId) {
+      query._id = { $ne: excludeSurveyId };
+    }
+
+    const existing = await HouseholdSurvey.findOne(query)
+      .select('_id representativeName village');
+
+    if (existing) {
+      return res.json({
+        exists: true,
+        message: 'Mobile number already used.',
+        survey: {
+          id: existing._id,
+          representativeName: existing.representativeName,
+          village: existing.village,
+        },
+      });
+    }
+
+    return res.json({ exists: false });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
