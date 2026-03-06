@@ -50,6 +50,7 @@ export interface EmploymentMember {
   name?: string;             // filled when person === "Other"  maps → name
   age?: number;
   gender?: string;
+  employmentStatus: string;
   unemploymentReason?: string; // maps → unemploymentReason
   skills: string[];          // maps → skillsKnown
   skillOther?: string;       // maps → otherSkills
@@ -161,11 +162,11 @@ export class SurveyApiService {
         name: resolvePersonName(m),                    // UI: person / name → backend: name
         age: m.age ?? 0,
         gender: m.gender ?? '',
+        employmentStatus: m.employmentStatus,
         highestEducation: m.highestEducation,
         skillsKnown: m.skills ?? [],                   // UI: skills → backend: skillsKnown
         otherSkills: m.skillOther,                     // UI: skillOther → backend: otherSkills
         unemploymentReason: m.unemploymentReason ?? '',
-        // NOTE: hasAadhar, employmentType, employmentStatus, businessType, etc. are UI-only
       }));
 
     // Determine hasUnEmployedMembers based on whether there are any members

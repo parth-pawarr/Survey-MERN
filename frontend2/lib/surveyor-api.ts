@@ -89,6 +89,7 @@ export interface UnemployedMemberPayload {
   name: string;
   age: number;
   gender: string;
+  employmentStatus: string;
   highestEducation: string;
   skillsKnown?: string[];   // backend field name
   otherSkills?: string;
