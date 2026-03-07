@@ -256,11 +256,17 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
   const totalSurveys = dash.overview.totalSurveys || 0;
 
   const ayushmanRaw = analytics.ayushmanStats || [];
+
+  // Individual member level stats (New requirement: Population based)
+  const totalPop = ayushmanRaw.reduce((s: number, a: any) => s + (a.totalMembersInGroup || 0), 0);
+  const totalAyushmanCards = ayushmanRaw.reduce((s: number, a: any) => s + (a.memberCount || 0), 0);
+  const ayushmanMemberPct = totalPop > 0 ? Math.round((totalAyushmanCards / totalPop) * 100) : 0;
+
+  // Family level counts (for donut and summary)
   const ayushmanAll = ayushmanRaw.find((a: any) => (a._id || "").includes("All"))?.count || 0;
   const ayushmanSome = ayushmanRaw.find((a: any) => (a._id || "").includes("Some"))?.count || 0;
   const ayushmanNone = ayushmanRaw.find((a: any) => (a._id || "").includes("None"))?.count || 0;
   const totalAyushman = ayushmanAll + ayushmanSome + ayushmanNone;
-  const ayushmanFullPct = totalAyushman > 0 ? Math.round((ayushmanAll / totalAyushman) * 100) : 0;
 
   // ── HEALTHCARE derived ───────────────────────────────────────────────────────
   // 1. Health issue bar chart — merge with seed categories
@@ -439,7 +445,7 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
         <KpiCard icon={BarChart3} label="Total Surveys" value={totalSurveys} sub="All time" color="blue" />
         <KpiCard icon={Users} label="Surveyors" value={`${dash.overview.activeSurveyors}/${dash.overview.totalSurveyors}`} sub="Active / Total" color="teal" />
         <KpiCard icon={Heart} label="Health Cases" value={totalHealthCases} sub={`${healthBarData.filter(d => d.count > 0).length} conditions tracked`} color="coral" />
-        <KpiCard icon={Shield} label="Ayushman (Full)" value={`${ayushmanFullPct}%`} sub={`${ayushmanAll} of ${totalAyushman} families`} color="amber" />
+        <KpiCard icon={Shield} label="Ayushman Card Coverage" value={`${ayushmanMemberPct}%`} sub={`${totalAyushmanCards} of ${totalPop} members`} color="amber" />
       </div>
 
       {/* ── Tabs ───────────────────────────────────────────────────────────── */}
