@@ -1404,11 +1404,11 @@ exports.getSurveyAnalytics = async (req, res) => {
 
     // Employment statistics
     const employmentStats = await HouseholdSurvey.aggregate([
-      { $match: { ...filter, hasEmployedMembers: 'Yes' } },
-      { $unwind: '$employedMembers' },
+      { $match: { ...filter, hasUnEmployedMembers: 'Yes' } },
+      { $unwind: '$unemployedMembers' },
       {
         $group: {
-          _id: '$employedMembers.employmentType',
+          _id: '$unemployedMembers.employmentStatus',
           count: { $sum: 1 }
         }
       },

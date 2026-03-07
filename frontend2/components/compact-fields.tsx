@@ -21,6 +21,7 @@ interface CompactInputProps {
   placeholder?: string;
   required?: boolean;
   maxLength?: number;
+  min?: number;
   error?: string;
 }
 
@@ -33,6 +34,7 @@ export function CompactInput({
   placeholder = "",
   required = false,
   maxLength,
+  min,
   error,
 }: CompactInputProps) {
   return (
@@ -46,12 +48,28 @@ export function CompactInput({
         type={type}
         value={value}
         onChange={(e) => {
-          if (maxLength && e.target.value.length > maxLength) return;
-          onChange(e.target.value);
+          let val = e.target.value;
+          if (maxLength && val.length > maxLength) return;
+
+          if (type === "number") {
+            // Prevent negative sign and other non-numeric chars for positive-only fields
+            // Allow empty string so user can clear the field
+            if (val !== "" && !/^\d+$/.test(val)) return;
+
+            // Validate min if provided
+            if (min !== undefined && val !== "" && Number(val) < min) {
+              // Optionally we could just return, or set it to min
+              // But if the user types '0' and min is 1, they might be typing '05'
+              // So for now, we'll just prevent negative values at the input level
+            }
+          }
+
+          onChange(val);
         }}
         placeholder={placeholder}
         className="h-8 text-sm"
         maxLength={maxLength}
+        min={min}
         inputMode={type === "number" ? "numeric" : undefined}
       />
       {error && <p className="text-xs text-destructive">{error}</p>}
@@ -216,6 +234,7 @@ interface AgeGenderRowProps {
   gender: string;
   onGenderChange: (v: string) => void;
   ageId: string;
+  min?: number;
   genderOptions: string[];
 }
 
@@ -225,6 +244,7 @@ export function AgeGenderRow({
   gender,
   onGenderChange,
   ageId,
+  min,
   genderOptions,
 }: AgeGenderRowProps) {
   return (
@@ -237,6 +257,7 @@ export function AgeGenderRow({
         type="number"
         placeholder="Age"
         maxLength={3}
+        min={min}
       />
       <CompactDropdown
         label="Gender"

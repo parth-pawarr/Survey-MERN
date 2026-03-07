@@ -50,6 +50,7 @@ export interface EmploymentMember {
   name?: string;             // filled when person === "Other"  maps → name
   age?: number;
   gender?: string;
+  employmentStatus: string;
   unemploymentReason?: string; // maps → unemploymentReason
   skills: string[];          // maps → skillsKnown
   skillOther?: string;       // maps → otherSkills
@@ -157,16 +158,22 @@ export class SurveyApiService {
     // unemploymentReason are mapped to the UnemployedMemberSchema.
     const unemployedMembers: UnemployedMemberPayload[] = employment.members
       .filter((m) => resolvePersonName(m))
-      .map((m): UnemployedMemberPayload => ({
-        name: resolvePersonName(m),                    // UI: person / name → backend: name
-        age: m.age ?? 0,
-        gender: m.gender ?? '',
-        highestEducation: m.highestEducation,
-        skillsKnown: m.skills ?? [],                   // UI: skills → backend: skillsKnown
-        otherSkills: m.skillOther,                     // UI: skillOther → backend: otherSkills
-        unemploymentReason: m.unemploymentReason ?? '',
-        // NOTE: hasAadhar, employmentType, employmentStatus, businessType, etc. are UI-only
-      }));
+      .map((m): UnemployedMemberPayload => {
+        const payload: UnemployedMemberPayload = {
+          name: resolvePersonName(m),                    // UI: person / name → backend: name
+          age: m.age ?? 0,
+          gender: m.gender ?? '',
+          employmentStatus: m.employmentStatus,
+          highestEducation: m.highestEducation,
+          skillsKnown: m.skills ?? [],                   // UI: skills → backend: skillsKnown
+          otherSkills: m.skillOther,                     // UI: skillOther → backend: otherSkills
+        };
+        // Only include unemploymentReason if person is actually unemployed
+        if (m.employmentStatus === 'Unemployed') {
+          payload.unemploymentReason = m.unemploymentReason ?? '';
+        }
+        return payload;
+      });
 
     // Determine hasUnEmployedMembers based on whether there are any members
     const hasUnEmployedMembers = unemployedMembers.length > 0 ? 'Yes' : 'No';

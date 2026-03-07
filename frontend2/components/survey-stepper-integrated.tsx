@@ -439,6 +439,7 @@ export function SurveyStepper({
                     onAgeChange={setAge}
                     onGenderChange={setGender}
                     ageId="rep-age"
+                    min={0}
                     genderOptions={GENDERS}
                   />
                   <CompactInput
@@ -670,7 +671,7 @@ export function SurveyStepper({
                 onClick={goNext}
                 className="flex-1"
                 disabled={
-                  (step === 1 && (!repName || !mobile || !age || !gender || !totalMembers || !ayushmanStatus || !isWhatsApp)) ||
+                  (step === 1 && (isDuplicate || !repName || !mobile || !age || !gender || !totalMembers || !ayushmanStatus || !isWhatsApp)) ||
                   (step === 2 && !hasHealthIssue) ||
                   (step === 3 && !hasEduIssue) ||
                   (step === 4 && !hasUnemployment)
