@@ -1421,7 +1421,17 @@ exports.getSurveyAnalytics = async (req, res) => {
       {
         $group: {
           _id: '$ayushmanCardStatus',
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          memberCount: {
+            $sum: {
+              $cond: [
+                { $eq: ['$ayushmanCardStatus', 'All Members Have'] },
+                '$totalFamilyMembers',
+                { $ifNull: ['$ayushmanMembersCount', 0] }
+              ]
+            }
+          },
+          totalMembersInGroup: { $sum: '$totalFamilyMembers' }
         }
       }
     ]);
