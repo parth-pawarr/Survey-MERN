@@ -311,7 +311,7 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
   const employed = empRaw.find((e: any) => (e._id || "").toLowerCase().includes("employ") && !(e._id || "").toLowerCase().includes("unemp"))?.count || 0;
   const unemployed = empRaw.find((e: any) => (e._id || "").toLowerCase().includes("unemp"))?.count || 0;
   const empDonutData = [
-    { name: "Employed", value: employed, fill: C.emerald },
+    { name: "Suboptimally Employed", value: employed, fill: C.emerald },
     { name: "Unemployed", value: unemployed, fill: C.coral },
   ].filter((d) => d.value > 0);
   const totalEmp = employed + unemployed;
@@ -770,7 +770,7 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
                   </ResponsiveContainer>
                   <div className="grid grid-cols-2 gap-2 text-center border-t pt-2">
                     {[
-                      { label: "Employed", value: employed, color: C.emerald },
+                      { label: "Suboptimally Employed", value: employed, color: C.emerald },
                       { label: "Unemployed", value: unemployed, color: C.coral },
                     ].map((r) => (
                       <div key={r.label}>
