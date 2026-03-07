@@ -852,6 +852,7 @@ export function SurveyStepper({
                     onAgeChange={setAge}
                     onGenderChange={setGender}
                     ageId="rep-age"
+                    min={0}
                     genderOptions={GENDERS}
                   />
                   <CompactInput
@@ -863,6 +864,7 @@ export function SurveyStepper({
                     type="number"
                     required
                     maxLength={2}
+                    min={1}
                   />
                   <CompactRadioGroup
                     label="Ayushman Card Status"
@@ -880,6 +882,7 @@ export function SurveyStepper({
                       type="number"
                       required
                       maxLength={2}
+                      min={0}
                     />
                   )}
                 </CardContent>
@@ -1346,9 +1349,8 @@ export function SurveyStepper({
                 onClick={goNext}
                 className="flex-1"
                 disabled={
-                  // In update mode: data is pre-filled from an existing valid survey,
-                  // so only block if isPrefilling (data still loading). 
                   isPrefilling ||
+                  (step === 1 && mobileValidated === false) ||
                   // In new mode: enforce per-step field validation.
                   (mode !== 'update' && (
                     (step === 1 && (
