@@ -677,28 +677,7 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
               )}
             </ChartCard>
 
-            {/* ED-2 ─ Education Problems Horizontal Bar */}
-            <ChartCard title="Educational Problems Faced">
-              {eduProbData.some((d) => d.count > 0) ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={eduProbData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis type="number" allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""} tick={{ fontSize: 10 }} label={{ value: "Cases", position: "insideBottom", fontSize: 10, offset: -2 }} />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 8 }} width={110} />
-                    <Tooltip formatter={(v: any) => [v, "Cases"]} />
-                    <Bar dataKey="count" name="Cases" radius={[0, 4, 4, 0]}>
-                      {eduProbData.map((_, i) => (
-                        <Cell key={i} fill={PIE_PALETTE[(i + 3) % PIE_PALETTE.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <NoData msg="No educational problem data available" />
-              )}
-            </ChartCard>
-
-            {/* ED-3 ─ Enrollment Status Donut */}
+            {/* ED-2 ─ Enrollment Status Donut */}
             <ChartCard title="Enrollment Status Distribution">
               {totalEnrollment > 0 ? (
                 <div className="space-y-3">
@@ -739,6 +718,27 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
               )}
             </ChartCard>
 
+            {/* ED-3 ─ Education Problems Horizontal Bar */}
+            <ChartCard title="Educational Problems Faced">
+              {eduProbData.some((d) => d.count > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={eduProbData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis type="number" allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""} tick={{ fontSize: 10 }} label={{ value: "Cases", position: "insideBottom", fontSize: 10, offset: -2 }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 8 }} width={110} />
+                    <Tooltip formatter={(v: any) => [v, "Cases"]} />
+                    <Bar dataKey="count" name="Cases" radius={[0, 4, 4, 0]}>
+                      {eduProbData.map((_, i) => (
+                        <Cell key={i} fill={PIE_PALETTE[(i + 3) % PIE_PALETTE.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <NoData msg="No educational problem data available" />
+              )}
+            </ChartCard>
+
           </SectionCard>
         </TabsContent>
 
@@ -746,7 +746,28 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
         <TabsContent value="employment" className="space-y-6 mt-4">
           <SectionCard title="Employment Analytics" icon={Briefcase} color="violet">
 
-            {/* EM-1 ─ Employment Status Donut */}
+            {/* EM-1 ─ Skills Bar Chart */}
+            <ChartCard title="Skills Distribution Among Members">
+              {skillsData.some((d) => d.count > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={skillsData} margin={{ left: 0, right: 10, top: 5, bottom: 50 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-35} textAnchor="end" height={60} interval={0} />
+                    <YAxis allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""} tick={{ fontSize: 10 }} label={{ value: "Members", angle: -90, position: "insideLeft", fontSize: 10, offset: 10 }} />
+                    <Tooltip formatter={(v: any) => [v, "Members"]} />
+                    <Bar dataKey="count" name="Members" radius={[4, 4, 0, 0]}>
+                      {skillsData.map((_, i) => (
+                        <Cell key={i} fill={PIE_PALETTE[(i + 2) % PIE_PALETTE.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <NoData msg="No skills data available" />
+              )}
+            </ChartCard>
+
+            {/* EM-2 ─ Employment Status Donut */}
             <ChartCard title="Employment Status Distribution">
               {totalEmp > 0 ? (
                 <div className="space-y-3">
@@ -783,27 +804,6 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
                 </div>
               ) : (
                 <NoData msg="No employment data available" />
-              )}
-            </ChartCard>
-
-            {/* EM-2 ─ Skills Bar Chart */}
-            <ChartCard title="Skills Distribution Among Members">
-              {skillsData.some((d) => d.count > 0) ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={skillsData} margin={{ left: 0, right: 10, top: 5, bottom: 50 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="name" tick={{ fontSize: 8 }} angle={-35} textAnchor="end" height={60} interval={0} />
-                    <YAxis allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? String(v) : ""} tick={{ fontSize: 10 }} label={{ value: "Members", angle: -90, position: "insideLeft", fontSize: 10, offset: 10 }} />
-                    <Tooltip formatter={(v: any) => [v, "Members"]} />
-                    <Bar dataKey="count" name="Members" radius={[4, 4, 0, 0]}>
-                      {skillsData.map((_, i) => (
-                        <Cell key={i} fill={PIE_PALETTE[(i + 2) % PIE_PALETTE.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <NoData msg="No skills data available" />
               )}
             </ChartCard>
 

@@ -144,7 +144,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
         )}
 
         <main className="mx-auto max-w-lg p-4 flex flex-col gap-4">
-          <Card>
+          {/* <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
@@ -170,7 +170,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
                 </SelectContent>
               </Select>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Overview Cards */}
           <div className="grid grid-cols-2 gap-3">
