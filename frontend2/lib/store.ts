@@ -36,7 +36,7 @@ export interface UnemploymentMember {
   highestEducation: string;
   skills: string[];
   skillOther?: string;
-  unemploymentReason: string;
+  unemploymentReason?: string;  // Only required when employmentStatus === 'Unemployed'
   unemploymentReasonOther?: string;
 }
 
@@ -127,7 +127,7 @@ export const UNEMPLOYMENT_EDUCATION = [
 ];
 
 export const SKILLS = [
-  "12 Balutedar (बारा बलुतेदार) ",
+  "12 Balutedar (बारा बलुतेदार)",
   "Farming",
   "Mason",
   "Electrician",

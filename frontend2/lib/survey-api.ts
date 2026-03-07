@@ -158,16 +158,22 @@ export class SurveyApiService {
     // unemploymentReason are mapped to the UnemployedMemberSchema.
     const unemployedMembers: UnemployedMemberPayload[] = employment.members
       .filter((m) => resolvePersonName(m))
-      .map((m): UnemployedMemberPayload => ({
-        name: resolvePersonName(m),                    // UI: person / name → backend: name
-        age: m.age ?? 0,
-        gender: m.gender ?? '',
-        employmentStatus: m.employmentStatus,
-        highestEducation: m.highestEducation,
-        skillsKnown: m.skills ?? [],                   // UI: skills → backend: skillsKnown
-        otherSkills: m.skillOther,                     // UI: skillOther → backend: otherSkills
-        unemploymentReason: m.unemploymentReason ?? '',
-      }));
+      .map((m): UnemployedMemberPayload => {
+        const payload: UnemployedMemberPayload = {
+          name: resolvePersonName(m),                    // UI: person / name → backend: name
+          age: m.age ?? 0,
+          gender: m.gender ?? '',
+          employmentStatus: m.employmentStatus,
+          highestEducation: m.highestEducation,
+          skillsKnown: m.skills ?? [],                   // UI: skills → backend: skillsKnown
+          otherSkills: m.skillOther,                     // UI: skillOther → backend: otherSkills
+        };
+        // Only include unemploymentReason if person is actually unemployed
+        if (m.employmentStatus === 'Unemployed') {
+          payload.unemploymentReason = m.unemploymentReason ?? '';
+        }
+        return payload;
+      });
 
     // Determine hasUnEmployedMembers based on whether there are any members
     const hasUnEmployedMembers = unemployedMembers.length > 0 ? 'Yes' : 'No';

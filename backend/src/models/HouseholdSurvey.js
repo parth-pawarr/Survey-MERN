@@ -35,10 +35,21 @@ const UnemployedMemberSchema = new mongoose.Schema({
   age: { type: Number, required: true, min: 15, max: 100 },
   gender: { type: String, required: true, enum: ['Male', 'Female', 'Other'] },
   employmentStatus: { type: String, required: true, enum: ['Suboptimally Employed','Unemployed']},
-  highestEducation: { type: String, required: true, enum: ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Graduate', 'Postgraduate'] },
+  highestEducation: {
+    type: String,
+    required: true, 
+    enum: ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Graduate', 'Postgraduate'] 
+  },
   skillsKnown: [{ type: String, enum: skills }],
   otherSkills: String,
-  unemploymentReason: { type: String, enum: unemploymentReasons },
+  unemploymentReason: { 
+    type: String, 
+    required: function() {
+      return this.employmentStatus === 'Unemployed';
+    },
+    enum: unemploymentReasons,
+    sparse: true
+  },
   otherReason: String
 });
 

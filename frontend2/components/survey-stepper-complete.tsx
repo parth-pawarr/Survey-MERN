@@ -206,19 +206,22 @@ export function SurveyStepper({
         if (Array.isArray(s.unemployedMembers) && s.unemployedMembers.length > 0) {
           setUnempMembers(s.unemployedMembers.map((u: any) => {
             const isRep = (u.name || '').toLowerCase().trim() === repN.toLowerCase().trim();
-            return {
+            const member: any = {
               person: isRep ? repN : 'Other',
               name: isRep ? '' : (u.name || ''),
               age: u.age,
               gender: u.gender || '',
               // employmentType: '',
-              // employmentStatus: 'Unemployed',
-              employmentStatus: 'Unemployed',
+              employmentStatus: u.employmentStatus || 'Unemployed',
               highestEducation: u.highestEducation || '',
-              unemploymentReason: u.unemploymentReason || '',
               skills: Array.isArray(u.skillsKnown) ? u.skillsKnown : [],
               skillOther: u.otherSkills || '',
             };
+            // Only include unemployment reason if person is unemployed
+            if (u.employmentStatus === 'Unemployed') {
+              member.unemploymentReason = u.unemploymentReason || '';
+            }
+            return member;
           }));
         }
       }).catch((err: any) => {
