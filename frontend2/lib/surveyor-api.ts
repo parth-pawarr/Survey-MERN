@@ -89,10 +89,11 @@ export interface UnemployedMemberPayload {
   name: string;
   age: number;
   gender: string;
+  employmentStatus: string;
   highestEducation: string;
   skillsKnown?: string[];   // backend field name
   otherSkills?: string;
-  unemploymentReason: string;
+  unemploymentReason?: string;  // Only included when employmentStatus === 'Unemployed'
   otherReason?: string;
 }
 

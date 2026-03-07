@@ -65,7 +65,7 @@ interface EmploymentMember {
   name?: string;
   age?: number;
   gender?: string;
-  employmentType: string;
+  // employmentType: string;
   employmentStatus: string;
   unemploymentReason?: string;
   skills: string[];
@@ -206,18 +206,22 @@ export function SurveyStepper({
         if (Array.isArray(s.unemployedMembers) && s.unemployedMembers.length > 0) {
           setUnempMembers(s.unemployedMembers.map((u: any) => {
             const isRep = (u.name || '').toLowerCase().trim() === repN.toLowerCase().trim();
-            return {
+            const member: any = {
               person: isRep ? repN : 'Other',
               name: isRep ? '' : (u.name || ''),
               age: u.age,
               gender: u.gender || '',
-              employmentType: '',
-              employmentStatus: 'Unemployed',
+              // employmentType: '',
+              employmentStatus: u.employmentStatus || 'Unemployed',
               highestEducation: u.highestEducation || '',
-              unemploymentReason: u.unemploymentReason || '',
               skills: Array.isArray(u.skillsKnown) ? u.skillsKnown : [],
               skillOther: u.otherSkills || '',
             };
+            // Only include unemployment reason if person is unemployed
+            if (u.employmentStatus === 'Unemployed') {
+              member.unemploymentReason = u.unemploymentReason || '';
+            }
+            return member;
           }));
         }
       }).catch((err: any) => {
@@ -548,7 +552,7 @@ export function SurveyStepper({
         name: "",
         age: undefined,
         gender: "",
-        employmentType: "",
+        // employmentType: "",
         employmentStatus: "",
         highestEducation: "",
         skills: [],
@@ -965,12 +969,12 @@ export function SurveyStepper({
                                 />
                               </>
                             )}
-                            <CompactRadioGroup
+                            {/* <CompactRadioGroup
                               label="Has Ayushman Card?"
                               value={healthMembers[healthIdx]?.hasAyushman || ""}
                               onChange={(v) => updateHealthMember(healthIdx, "hasAyushman", v)}
                               options={["Yes", "No"]}
-                            />
+                            /> */}
                             {/* Health Issues Selection */}
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
@@ -1275,35 +1279,24 @@ export function SurveyStepper({
                               label="Employment Status"
                               value={unempMembers[unempIdx]?.employmentStatus || ""}
                               onChange={(v) => updateUnempMember(unempIdx, "employmentStatus", v)}
-                              options={["Employed", "Unemployed"]}
+                              options={["Suboptimally Employed", "Unemployed"]}
                               placeholder="Select status"
                             />
-                            {unempMembers[unempIdx]?.employmentStatus === "Employed" && (
-                              <>
-                                <CompactDropdown
-                                  label="Employment Type"
-                                  value={unempMembers[unempIdx]?.employmentType || ""}
-                                  onChange={(v) => updateUnempMember(unempIdx, "employmentType", v)}
-                                  options={["Salaried", "Self-Employed", "Daily Wage", "Other"]}
-                                  placeholder="Select type"
-                                />
-                              </>
-                            )}
+                            <CompactDropdown
+                              label="Highest Education Level"
+                              value={unempMembers[unempIdx]?.highestEducation || ""}
+                              onChange={(v) => updateUnempMember(unempIdx, "highestEducation", v)}
+                              options={UNEMPLOYMENT_EDUCATION}
+                              placeholder="Select level"
+                            />
+                            <CompactCheckboxGroup
+                              label="Skills Known"
+                              selected={unempMembers[unempIdx]?.skills || []}
+                              onChange={(v) => updateUnempMember(unempIdx, "skills", v)}
+                              options={SKILLS}
+                            />
                             {unempMembers[unempIdx]?.employmentStatus === "Unemployed" && (
                               <>
-                                <CompactDropdown
-                                  label="Highest Education Level"
-                                  value={unempMembers[unempIdx]?.highestEducation || ""}
-                                  onChange={(v) => updateUnempMember(unempIdx, "highestEducation", v)}
-                                  options={UNEMPLOYMENT_EDUCATION}
-                                  placeholder="Select level"
-                                />
-                                <CompactCheckboxGroup
-                                  label="Skills Known"
-                                  selected={unempMembers[unempIdx]?.skills || []}
-                                  onChange={(v) => updateUnempMember(unempIdx, "skills", v)}
-                                  options={SKILLS}
-                                />
                                 <CompactDropdown
                                   label="Main Reason for Unemployment"
                                   value={unempMembers[unempIdx]?.unemploymentReason || ""}
@@ -1313,6 +1306,7 @@ export function SurveyStepper({
                                 />
                               </>
                             )}
+
                           </motion.div>
                         </AnimatePresence>
                       </div>
