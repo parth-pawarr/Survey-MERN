@@ -266,6 +266,29 @@ export function SurveyStepper({
   const [unempMembers, setUnempMembers] = useState<EmploymentMember[]>([]);
   const [unempIdx, setUnempIdx] = useState(0);
   const [unempDir, setUnempDir] = useState(1);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isStepValid, setIsStepValid] = useState(false);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+  const [isStepSubmitted, setIsStepSubmitted] = useState<Record<number, boolean>>({});
+
+  // Real-time validation hook
+  useEffect(() => {
+    setIsStepValid(validateStep(step));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    step, repName, mobile, mobileValidated, age, gender, totalMembers, ayushmanStatus, ayushmanCount,
+    hasHealthIssue, healthMembers,
+    hasEduIssue, eduMembers,
+    hasUnemployment, unempMembers
+  ]);
+
+  const markTouched = (id: string) => {
+    setTouchedFields(prev => prev[id] ? prev : { ...prev, [id]: true });
+  };
+
+  const getFieldError = (id: string) => {
+    return (touchedFields[id] || isStepSubmitted[step]) ? fieldErrors[id] : undefined;
+  };
 
   // Swipe-to-navigate for member carousels
   // One ref per section tracks the X position where the touch started.
@@ -482,6 +505,12 @@ export function SurveyStepper({
 
       return updated;
     });
+
+    if (field === "patient") markTouched(`h-patient-${idx}`);
+    if (field === "patientName") markTouched(`h-name-${idx}`);
+    if (field === "age") markTouched(`h-age-${idx}`);
+    if (field === "gender") markTouched(`h-gender-${idx}`);
+    if (field === "healthIssue" || field === "morbidity") markTouched(`h-health-info-${idx}`);
   };
 
   const removeHealthMember = (idx: number) => {
@@ -533,6 +562,12 @@ export function SurveyStepper({
 
       return updated;
     });
+
+    if (field === "person") markTouched(`e-person-${idx}`);
+    if (field === "name") markTouched(`e-name-${idx}`);
+    if (field === "age") markTouched(`e-age-${idx}`);
+    if (field === "gender") markTouched(`e-gender-${idx}`);
+    if (field === "educationLevel") markTouched(`e-level-${idx}`);
   };
 
   const removeEduMember = (idx: number) => {
@@ -594,6 +629,14 @@ export function SurveyStepper({
 
       return updated;
     });
+
+    if (field === "person") markTouched(`u-person-${idx}`);
+    if (field === "name") markTouched(`u-name-${idx}`);
+    if (field === "age") markTouched(`u-age-${idx}`);
+    if (field === "gender") markTouched(`u-gender-${idx}`);
+    if (field === "employmentStatus") markTouched(`u-status-${idx}`);
+    if (field === "highestEducation") markTouched(`u-edu-${idx}`);
+    if (field === "unemploymentReason") markTouched(`u-reason-${idx}`);
   };
 
   const removeUnempMember = (idx: number) => {
@@ -642,17 +685,152 @@ export function SurveyStepper({
     SurveyApiService.saveDraft(formData, village);
   }, [getCurrentFormData, village, mode]);
 
+  const validateStep = (s: number): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (s === 1) {
+      if (!repName.trim()) errors.repName = "Representative name is required";
+      if (!mobile) errors.mobile = "Mobile number is required";
+      else if (mobile.length !== 10) errors.mobile = "Mobile number must be 10 digits";
+      else if (mobileValidated === false) errors.mobile = "Mobile number already used";
+
+      if (!isWhatsApp) errors.isWhatsApp = "Please specify if this is a WhatsApp number";
+
+      const repAge = Number(age);
+      if (!age) {
+        errors.age = "Age is required";
+      } else if (repAge < 0 || repAge > 120) {
+        errors.age = "Age must be 0–120";
+      }
+
+      if (!gender) errors.gender = "Gender is required";
+
+      const familySize = Number(totalMembers);
+      if (!totalMembers) {
+        errors.totalMembers = "Total family members is required";
+      } else if (familySize <= 0) {
+        errors.totalMembers = "At least 1 member required";
+      } else if (familySize > 50) {
+        errors.totalMembers = "Total family members: maximum 50";
+      }
+
+      if (!ayushmanStatus) errors.ayushmanStatus = "Ayushman card status is required";
+      if (ayushmanStatus === "Some Members Have") {
+        const aCount = Number(ayushmanCount);
+        if (!ayushmanCount) {
+          errors.ayushmanCount = "Please specify count";
+        } else if (aCount <= 0) {
+          errors.ayushmanCount = "Count must be greater than 0";
+        } else if (aCount > 50) {
+          errors.ayushmanCount = "Ayushman Members Count: maximum 50";
+        } else if (aCount > familySize) {
+          errors.ayushmanCount = "Cannot exceed total family members";
+        }
+      }
+    } else if (s === 2) {
+      if (!hasHealthIssue) errors.hasHealthIssue = "Please select an option";
+      if (hasHealthIssue === "Yes") {
+        healthMembers.forEach((m, idx) => {
+          if (!m.patient) errors[`h-patient-${idx}`] = "Select patient";
+          if (m.patient === "Other") {
+            if (!m.patientName?.trim()) errors[`h-name-${idx}`] = "Name required";
+            if (!m.age) {
+              errors[`h-age-${idx}`] = "Age required";
+            } else if (m.age <= 0 || m.age > 120) {
+              errors[`h-age-${idx}`] = "Age cannot exceed 120";
+            }
+            if (!m.gender) errors[`h-gender-${idx}`] = "Gender required";
+          }
+
+          // At least one health issue or morbidity required
+          if ((!m.healthIssue || m.healthIssue.length === 0) && (!m.morbidity || m.morbidity.length === 0)) {
+            errors[`h-health-info-${idx}`] = "Please enter at least one health issue or morbidity problem.";
+          }
+        });
+      }
+    } else if (s === 3) {
+      if (!hasEduIssue) errors.hasEduIssue = "Please select an option";
+      if (hasEduIssue === "Yes") {
+        eduMembers.forEach((m, idx) => {
+          if (!m.person) errors[`e-person-${idx}`] = "Select person";
+          if (m.person === "Other") {
+            if (!m.name?.trim()) errors[`e-name-${idx}`] = "Name required";
+            if (!m.age) {
+              errors[`e-age-${idx}`] = "Age required";
+            } else if (m.age < 0 || m.age > 25) {
+              errors[`e-age-${idx}`] = "Education Children Age: maximum 25";
+            }
+            if (!m.gender) errors[`e-gender-${idx}`] = "Gender required";
+          } else {
+            // For selected persons, we might still want to check age if we auto-filled it from other steps
+            if (m.age && m.age > 25) {
+              errors[`e-person-${idx}`] = `${m.person}'s age (${m.age}) exceeds education limit (25)`;
+            }
+          }
+          if (!m.educationLevel) errors[`e-level-${idx}`] = "Education level required";
+        });
+      }
+    } else if (s === 4) {
+      if (!hasUnemployment) errors.hasUnemployment = "Please select an option";
+      if (hasUnemployment === "Yes") {
+        unempMembers.forEach((m, idx) => {
+          if (!m.person) errors[`u-person-${idx}`] = "Select person";
+          if (m.person === "Other") {
+            if (!m.name?.trim()) errors[`u-name-${idx}`] = "Name required";
+            if (!m.age) {
+              errors[`u-age-${idx}`] = "Age required";
+            } else if (m.age < 15) {
+              errors[`u-age-${idx}`] = "Unemployed Members Age: minimum 15";
+            } else if (m.age > 120) {
+              errors[`u-age-${idx}`] = "Age cannot exceed 120";
+            }
+            if (!m.gender) errors[`u-gender-${idx}`] = "Gender required";
+          } else {
+            // For selected persons, check minimum age
+            if (m.age && m.age < 15) {
+              errors[`u-person-${idx}`] = `${m.person}'s age (${m.age}) is below employment limit (15)`;
+            }
+          }
+          if (!m.employmentStatus) errors[`u-status-${idx}`] = "Status required";
+          if (!m.highestEducation) errors[`u-edu-${idx}`] = "Education required";
+          if (m.employmentStatus === "Unemployed" && !m.unemploymentReason) errors[`u-reason-${idx}`] = "Reason required";
+        });
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const goNext = () => {
-    setDirection(1);
-    setStep((s) => Math.min(s + 1, 4));
+    if (validateStep(step)) {
+      setDirection(1);
+      setStep((s) => {
+        const next = Math.min(s + 1, 4);
+        // Reset submisson status for the next step if we are moving forward
+        if (next !== s) setIsStepSubmitted(prev => ({ ...prev, [next]: false }));
+        return next;
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setIsStepSubmitted(prev => ({ ...prev, [step]: true }));
+    }
   };
 
   const goBack = () => {
+    setFieldErrors({});
+    setIsStepSubmitted(prev => ({ ...prev, [step]: false }));
     setDirection(-1);
     setStep((s) => Math.max(s - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmit = async () => {
+    if (!validateStep(step)) {
+      setIsStepSubmitted(prev => ({ ...prev, [step]: true }));
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setError(null);
@@ -788,8 +966,12 @@ export function SurveyStepper({
                     id="rep-name"
                     placeholder="Enter name"
                     value={repName}
-                    onChange={setRepName}
+                    onChange={(v) => {
+                      setRepName(v);
+                      markTouched('repName');
+                    }}
                     required
+                    error={getFieldError('repName')}
                   />
                   {/* Mobile Number field + inline Validate button */}
                   <div className="flex flex-col gap-1">
@@ -799,8 +981,12 @@ export function SurveyStepper({
                           label="Mobile Number"
                           id="mobile"
                           value={mobile}
-                          onChange={handleMobileChange}
+                          onChange={(v) => {
+                            handleMobileChange(v);
+                            markTouched('mobile');
+                          }}
                           required
+                          error={getFieldError('mobile')}
                         />
                       </div>
                       {/* mt-[1.375rem] skips past the label (text-xs + gap-1) so the
@@ -844,33 +1030,58 @@ export function SurveyStepper({
                     label="Is this WhatsApp number?"
                     options={["Yes", "No"]}
                     value={isWhatsApp}
-                    onChange={setIsWhatsApp}
+                    onChange={(v) => {
+                      setIsWhatsApp(v);
+                      markTouched('isWhatsApp');
+                    }}
+                    required
+                    error={getFieldError('isWhatsApp')}
                   />
                   <AgeGenderRow
                     age={age}
                     gender={gender}
-                    onAgeChange={setAge}
-                    onGenderChange={setGender}
+                    onAgeChange={(v) => {
+                      setAge(v);
+                      markTouched('age');
+                    }}
+                    onGenderChange={(v) => {
+                      setGender(v);
+                      markTouched('gender');
+                    }}
                     ageId="rep-age"
                     min={0}
+                    max={120}
                     genderOptions={GENDERS}
+                    required
+                    ageError={getFieldError('age')}
+                    genderError={getFieldError('gender')}
                   />
                   <CompactInput
                     label="Total Family Members"
                     id="total-members"
                     placeholder="Number of family members"
                     value={totalMembers}
-                    onChange={setTotalMembers}
+                    onChange={(v) => {
+                      setTotalMembers(v);
+                      markTouched('totalMembers');
+                    }}
                     type="number"
                     required
                     maxLength={2}
                     min={1}
+                    max={50}
+                    error={getFieldError('totalMembers')}
                   />
                   <CompactRadioGroup
                     label="Ayushman Card Status"
                     options={["All Members Have", "Some Members Have", "None Have"]}
                     value={ayushmanStatus}
-                    onChange={setAyushmanStatus}
+                    onChange={(v) => {
+                      setAyushmanStatus(v);
+                      markTouched('ayushmanStatus');
+                    }}
+                    required
+                    error={getFieldError('ayushmanStatus')}
                   />
                   {ayushmanStatus === "Some Members Have" && (
                     <CompactInput
@@ -878,11 +1089,16 @@ export function SurveyStepper({
                       id="ayushman-count"
                       placeholder="Enter count"
                       value={ayushmanCount}
-                      onChange={setAyushmanCount}
+                      onChange={(v) => {
+                        setAyushmanCount(v);
+                        markTouched('ayushmanCount');
+                      }}
                       type="number"
                       required
                       maxLength={2}
                       min={0}
+                      max={50}
+                      error={getFieldError('ayushmanCount')}
                     />
                   )}
                 </CardContent>
@@ -905,9 +1121,12 @@ export function SurveyStepper({
                     value={hasHealthIssue}
                     onChange={(v) => {
                       setHasHealthIssue(v);
+                      markTouched('hasHealthIssue');
                       if (v === "Yes" && healthMembers.length === 0) addHealthMember();
                     }}
                     options={["Yes", "No"]}
+                    required
+                    error={getFieldError('hasHealthIssue')}
                   />
                   {hasHealthIssue === "Yes" && healthMembers.length > 0 && (
                     <div className="flex flex-col gap-3">
@@ -952,6 +1171,8 @@ export function SurveyStepper({
                               onChange={(v) => updateHealthMember(healthIdx, "patient", v)}
                               options={[repName || "Representative Name", "Other"]}
                               placeholder="Select patient"
+                              required
+                              error={getFieldError(`h-patient-${healthIdx}`)}
                             />
                             {healthMembers[healthIdx]?.patient === "Other" && (
                               <>
@@ -961,6 +1182,8 @@ export function SurveyStepper({
                                   value={healthMembers[healthIdx]?.patientName || ""}
                                   onChange={(v) => updateHealthMember(healthIdx, "patientName", v)}
                                   placeholder="Enter name"
+                                  required
+                                  error={getFieldError(`h-name-${healthIdx}`)}
                                 />
                                 <AgeGenderRow
                                   age={healthMembers[healthIdx]?.age || ""}
@@ -969,6 +1192,11 @@ export function SurveyStepper({
                                   onGenderChange={(v) => updateHealthMember(healthIdx, "gender", v)}
                                   ageId={`h-age-${healthIdx}`}
                                   genderOptions={GENDERS}
+                                  required
+                                  min={0}
+                                  max={120}
+                                  ageError={getFieldError(`h-age-${healthIdx}`)}
+                                  genderError={getFieldError(`h-gender-${healthIdx}`)}
                                 />
                               </>
                             )}
@@ -1058,6 +1286,13 @@ export function SurveyStepper({
                                   </div>
                                 ))}
                               </div>
+
+                              {/* Error for Health Info */}
+                              {getFieldError(`h-health-info-${healthIdx}`) && (
+                                <p className="text-[10px] font-medium leading-tight text-destructive animate-pulse mt-1">
+                                  {getFieldError(`h-health-info-${healthIdx}`)}
+                                </p>
+                              )}
                             </div>
                           </motion.div>
                         </AnimatePresence>
@@ -1095,9 +1330,12 @@ export function SurveyStepper({
                     value={hasEduIssue}
                     onChange={(v) => {
                       setHasEduIssue(v);
+                      markTouched('hasEduIssue');
                       if (v === "Yes" && eduMembers.length === 0) addEduMember();
                     }}
                     options={["Yes", "No"]}
+                    required
+                    error={getFieldError('hasEduIssue')}
                   />
                   {hasEduIssue === "Yes" && eduMembers.length > 0 && (
                     <div className="flex flex-col gap-3">
@@ -1142,6 +1380,8 @@ export function SurveyStepper({
                               onChange={(v) => updateEduMember(eduIdx, "person", v)}
                               options={eduPersonOptions}
                               placeholder="Select person"
+                              required
+                              error={getFieldError(`e-person-${eduIdx}`)}
                             />
                             {eduMembers[eduIdx]?.person === "Other" && (
                               <>
@@ -1151,6 +1391,8 @@ export function SurveyStepper({
                                   value={eduMembers[eduIdx]?.name || ""}
                                   onChange={(v) => updateEduMember(eduIdx, "name", v)}
                                   placeholder="Enter name"
+                                  required
+                                  error={getFieldError(`e-name-${eduIdx}`)}
                                 />
                                 <AgeGenderRow
                                   age={eduMembers[eduIdx]?.age || ""}
@@ -1159,6 +1401,11 @@ export function SurveyStepper({
                                   onGenderChange={(v) => updateEduMember(eduIdx, "gender", v)}
                                   ageId={`e-age-${eduIdx}`}
                                   genderOptions={GENDERS}
+                                  required
+                                  min={0}
+                                  max={25}
+                                  ageError={getFieldError(`e-age-${eduIdx}`)}
+                                  genderError={getFieldError(`e-gender-${eduIdx}`)}
                                 />
                               </>
                             )}
@@ -1168,6 +1415,8 @@ export function SurveyStepper({
                               onChange={(v) => updateEduMember(eduIdx, "educationLevel", v)}
                               options={EDUCATION_LEVELS}
                               placeholder="Select level"
+                              required
+                              error={getFieldError(`e-level-${eduIdx}`)}
                             />
                             <CompactCheckboxGroup
                               label="Type of Educational Issue"
@@ -1211,9 +1460,12 @@ export function SurveyStepper({
                     value={hasUnemployment}
                     onChange={(v) => {
                       setHasUnemployment(v);
+                      markTouched('hasUnemployment');
                       if (v === "Yes" && unempMembers.length === 0) addUnempMember();
                     }}
                     options={["Yes", "No"]}
+                    required
+                    error={getFieldError('hasUnemployment')}
                   />
                   {hasUnemployment === "Yes" && unempMembers.length > 0 && (
                     <div className="flex flex-col gap-3">
@@ -1258,6 +1510,8 @@ export function SurveyStepper({
                               onChange={(v) => updateUnempMember(unempIdx, "person", v)}
                               options={unempPersonOptions}
                               placeholder="Select person"
+                              required
+                              error={getFieldError(`u-person-${unempIdx}`)}
                             />
                             {unempMembers[unempIdx]?.person === "Other" && (
                               <>
@@ -1267,6 +1521,8 @@ export function SurveyStepper({
                                   value={unempMembers[unempIdx]?.name || ""}
                                   onChange={(v) => updateUnempMember(unempIdx, "name", v)}
                                   placeholder="Enter name"
+                                  required
+                                  error={getFieldError(`u-name-${unempIdx}`)}
                                 />
                                 <AgeGenderRow
                                   age={unempMembers[unempIdx]?.age || ""}
@@ -1275,6 +1531,11 @@ export function SurveyStepper({
                                   onGenderChange={(v) => updateUnempMember(unempIdx, "gender", v)}
                                   ageId={`u-age-${unempIdx}`}
                                   genderOptions={GENDERS}
+                                  required
+                                  min={15}
+                                  max={120}
+                                  ageError={getFieldError(`u-age-${unempIdx}`)}
+                                  genderError={getFieldError(`u-gender-${unempIdx}`)}
                                 />
                               </>
                             )}
@@ -1284,6 +1545,8 @@ export function SurveyStepper({
                               onChange={(v) => updateUnempMember(unempIdx, "employmentStatus", v)}
                               options={["Suboptimally Employed", "Unemployed"]}
                               placeholder="Select status"
+                              required
+                              error={getFieldError(`u-status-${unempIdx}`)}
                             />
                             <CompactDropdown
                               label="Highest Education Level"
@@ -1291,6 +1554,8 @@ export function SurveyStepper({
                               onChange={(v) => updateUnempMember(unempIdx, "highestEducation", v)}
                               options={UNEMPLOYMENT_EDUCATION}
                               placeholder="Select level"
+                              required
+                              error={getFieldError(`u-edu-${unempIdx}`)}
                             />
                             <CompactCheckboxGroup
                               label="Skills Known"
@@ -1306,6 +1571,8 @@ export function SurveyStepper({
                                   onChange={(v) => updateUnempMember(unempIdx, "unemploymentReason", v)}
                                   options={UNEMPLOYMENT_REASONS}
                                   placeholder="Select reason"
+                                  required
+                                  error={getFieldError(`u-reason-${unempIdx}`)}
                                 />
                               </>
                             )}
@@ -1348,19 +1615,7 @@ export function SurveyStepper({
               <Button
                 onClick={goNext}
                 className="flex-1"
-                disabled={
-                  isPrefilling ||
-                  (step === 1 && mobileValidated === false) ||
-                  // In new mode: enforce per-step field validation.
-                  (mode !== 'update' && (
-                    (step === 1 && (
-                      !repName || !mobile || !isWhatsApp || !age || !gender || !totalMembers || !ayushmanStatus ||
-                      (ayushmanStatus === 'Some Members Have' && !ayushmanCount)
-                    )) ||
-                    (step === 2 && !hasHealthIssue) ||
-                    (step === 3 && !hasEduIssue)
-                  ))
-                }
+                disabled={isPrefilling}
               >
                 Next
                 <ChevronRight className="size-4 ml-2" />
