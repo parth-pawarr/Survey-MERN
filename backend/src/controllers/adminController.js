@@ -21,6 +21,14 @@ exports.getSurveyors = async (req, res) => {
       filter.assignedVillages = { $in: [req.query.village] };
     }
 
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      filter.$or = [
+        { username: searchRegex },
+        { mobileNumber: searchRegex }
+      ];
+    }
+
     // Get surveyors with pagination
     const surveyors = await User.find(filter)
       .select('-password')
@@ -83,17 +91,30 @@ exports.getSurveyors = async (req, res) => {
 exports.createSurveyor = async (req, res) => {
   try {
     const {
-      username,
+      firstName,
+      lastName,
+      mobileNumber,
       password,
       assignedVillages = [],
-      email,
-      phone
+      email
     } = req.body;
 
-    // Check if username exists
-    const existingUser = await User.findOne({ username });
+    if (!firstName || !lastName || !mobileNumber || !password) {
+      return res.status(400).json({ message: 'All fields are required (First Name, Last Name, Mobile Number, Password)' });
+    }
+
+    if (!/^\d{10}$/.test(mobileNumber)) {
+      return res.status(400).json({ message: 'Mobile number must be exactly 10 digits' });
+    }
+
+    const username = mobileNumber;
+
+    // Check if mobile/username already exists
+    const existingUser = await User.findOne({
+      $or: [{ username }, { mobileNumber }]
+    });
     if (existingUser) {
-      return res.status(400).json({ message: 'Username already exists' });
+      return res.status(400).json({ message: 'Mobile number already registered' });
     }
 
     // Validate assigned villages exist
@@ -112,10 +133,12 @@ exports.createSurveyor = async (req, res) => {
     const surveyor = new User({
       username,
       password,
+      firstName,
+      lastName,
+      mobileNumber,
       role: 'surveyor',
       assignedVillages,
       email,
-      phone,
       createdBy: req.user._id
     });
 
@@ -134,6 +157,9 @@ exports.createSurveyor = async (req, res) => {
       surveyor: {
         id: surveyor._id,
         username: surveyor.username,
+        firstName: surveyor.firstName,
+        lastName: surveyor.lastName,
+        mobileNumber: surveyor.mobileNumber,
         assignedVillages: surveyor.assignedVillages,
         isActive: surveyor.isActive,
         createdAt: surveyor.createdAt
@@ -148,7 +174,7 @@ exports.createSurveyor = async (req, res) => {
 exports.updateSurveyor = async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, phone, isActive } = req.body;
+    const { email, mobileNumber, isActive, firstName, lastName } = req.body;
 
     const surveyor = await User.findOne({ _id: id, role: 'surveyor' });
     if (!surveyor) {
@@ -157,8 +183,10 @@ exports.updateSurveyor = async (req, res) => {
 
     // Update fields
     if (email !== undefined) surveyor.email = email;
-    if (phone !== undefined) surveyor.phone = phone;
+    if (mobileNumber !== undefined) surveyor.mobileNumber = mobileNumber;
     if (isActive !== undefined) surveyor.isActive = isActive;
+    if (firstName !== undefined) surveyor.firstName = firstName;
+    if (lastName !== undefined) surveyor.lastName = lastName;
 
     await surveyor.save();
 
@@ -168,7 +196,9 @@ exports.updateSurveyor = async (req, res) => {
         id: surveyor._id,
         username: surveyor.username,
         email: surveyor.email,
-        phone: surveyor.phone,
+        mobileNumber: surveyor.mobileNumber,
+        firstName: surveyor.firstName,
+        lastName: surveyor.lastName,
         assignedVillages: surveyor.assignedVillages,
         isActive: surveyor.isActive,
         updatedAt: surveyor.updatedAt

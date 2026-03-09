@@ -49,10 +49,10 @@ export function LoginPage({ onAdminLogin, onSurveyorLogin }: LoginPageProps) {
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="login-username" className="text-xs">Username</Label>
+            <Label htmlFor="login-username" className="text-xs">Username / Mobile Number</Label>
             <Input
               id="login-username"
-              placeholder="Enter username"
+              placeholder="Enter username or mobile"
               value={username}
               onChange={(e) => { setUsername(e.target.value); clearError(); }}
               className="h-9"

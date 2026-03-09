@@ -3,7 +3,11 @@ const User = require('../models/User');
 
 exports.getSurveys = async (req, res) => {
   try {
-    const { village } = req.query;
+    const { village, search } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const filter = { surveyorId: req.user._id }; // Current surveyor only
 
     if (village) {
@@ -14,11 +18,36 @@ exports.getSurveys = async (req, res) => {
       filter.village = village;
     }
 
-    const surveys = await HouseholdSurvey.find(filter)
-      .sort({ surveyDate: -1 })
-      .limit(50);
+    // Add search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      filter.$or = [
+        { representativeName: searchRegex },
+        { mobileNumber: searchRegex }
+      ];
 
-    res.json(surveys);
+      // If search is a valid MongoDB ID, include it in the $or search
+      if (search.match(/^[0-9a-fA-F]{24}$/)) {
+        filter.$or.push({ _id: search });
+      }
+    }
+
+    const surveys = await HouseholdSurvey.find(filter)
+      .sort({ surveyDate: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await HouseholdSurvey.countDocuments(filter);
+
+    res.json({
+      surveys,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

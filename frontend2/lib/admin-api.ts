@@ -4,8 +4,10 @@ import { api } from './api';
 export interface Surveyor {
   _id: string;
   username: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
-  mobile?: string;
+  mobileNumber?: string;
   assignedVillages: string[];
   isActive: boolean;
   createdAt: string;
@@ -15,16 +17,20 @@ export interface Surveyor {
 
 export interface CreateSurveyorRequest {
   username: string;
+  firstName: string;
+  lastName: string;
   password: string;
   email?: string;
-  mobile?: string;
+  mobileNumber?: string;
   assignedVillages: string[];
 }
 
 export interface UpdateSurveyorRequest {
   username?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
-  mobile?: string;
+  mobileNumber?: string;
   assignedVillages?: string[];
   isActive?: boolean;
 }

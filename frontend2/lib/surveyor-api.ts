@@ -37,6 +37,16 @@ export interface Survey {
   longitude?: number;
 }
 
+export interface SurveyListResponse {
+  surveys: Survey[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 export interface SurveyorStats {
   overview: {
     totalSurveys: number;
@@ -136,9 +146,16 @@ export class SurveyorApiService {
   }
 
   // Survey Management
-  static async getSurveys(village?: string) {
-    const params = village ? `?village=${encodeURIComponent(village)}` : '';
-    return api.get<Survey[]>(`/surveys${params}`);
+  static async getSurveys(village?: string, page: number = 1, limit: number = 10, search?: string) {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    if (village) params.append('village', village);
+    if (search) params.append('search', search);
+
+    return api.get<SurveyListResponse>(`/surveys?${params.toString()}`);
   }
 
   static async getSurvey(id: string) {

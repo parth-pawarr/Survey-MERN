@@ -42,6 +42,7 @@ export interface EducationMember {
   gender?: string;
   educationLevel: string;    // maps → educationLevel
   educationalIssues: string[]; // maps → educationalIssues
+  educationalIssuesOther?: string; // maps → otherEducationalIssue (shown when "Other" is selected)
 }
 
 // Employment/unemployment member as collected by the stepper UI
@@ -52,6 +53,7 @@ export interface EmploymentMember {
   gender?: string;
   employmentStatus: string;
   unemploymentReason?: string; // maps → unemploymentReason
+  unemploymentReasonOther?: string; // maps → otherReason (shown when reason === "Other")
   skills: string[];          // maps → skillsKnown
   skillOther?: string;       // maps → otherSkills
   highestEducation: string;  // maps → highestEducation
@@ -150,6 +152,9 @@ export class SurveyApiService {
         gender: m.gender ?? '',
         educationLevel: m.educationLevel,
         educationalIssues: m.educationalIssues ?? [],
+        otherEducationalIssue: m.educationalIssues?.includes('Other')
+          ? m.educationalIssuesOther
+          : undefined,
         // NOTE: hasAadhar, schoolType, medium, scholarship, dropoutReason, currentClass, schoolName are UI-only
       }));
 
@@ -166,11 +171,15 @@ export class SurveyApiService {
           employmentStatus: m.employmentStatus,
           highestEducation: m.highestEducation,
           skillsKnown: m.skills ?? [],                   // UI: skills → backend: skillsKnown
-          otherSkills: m.skillOther,                     // UI: skillOther → backend: otherSkills
+          otherSkills: m.skills?.includes('Other') ? m.skillOther : undefined, // UI: skillOther → backend: otherSkills
         };
         // Only include unemploymentReason if person is actually unemployed
         if (m.employmentStatus === 'Unemployed') {
           payload.unemploymentReason = m.unemploymentReason ?? '';
+          // Include otherReason when reason is 'Other'
+          if (m.unemploymentReason === 'Other') {
+            payload.otherReason = m.unemploymentReasonOther ?? '';
+          }
         }
         return payload;
       });

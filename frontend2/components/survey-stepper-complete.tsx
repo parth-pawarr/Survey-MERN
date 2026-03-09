@@ -58,6 +58,7 @@ interface EducationMember {
   dropoutReason?: string;
   // currentClass?: string;
   educationalIssues: string[];
+  educationalIssuesOther?: string;  // custom value when "Other" is selected
 }
 
 interface EmploymentMember {
@@ -68,6 +69,7 @@ interface EmploymentMember {
   // employmentType: string;
   employmentStatus: string;
   unemploymentReason?: string;
+  unemploymentReasonOther?: string; // custom value when unemploymentReason === "Other"
   skills: string[];
   skillOther?: string;
   highestEducation: string;
@@ -197,6 +199,7 @@ export function SurveyStepper({
               gender: c.gender || '',
               educationLevel: c.educationLevel || '',
               educationalIssues: Array.isArray(c.educationalIssues) ? c.educationalIssues : [],
+              educationalIssuesOther: c.otherEducationalIssue || '',
             };
           }));
         }
@@ -220,6 +223,7 @@ export function SurveyStepper({
             // Only include unemployment reason if person is unemployed
             if (u.employmentStatus === 'Unemployed') {
               member.unemploymentReason = u.unemploymentReason || '';
+              member.unemploymentReasonOther = u.otherReason || '';
             }
             return member;
           }));
@@ -746,6 +750,14 @@ export function SurveyStepper({
           if ((!m.healthIssue || m.healthIssue.length === 0) && (!m.morbidity || m.morbidity.length === 0)) {
             errors[`h-health-info-${idx}`] = "Please enter at least one health issue or morbidity problem.";
           }
+          // "Other" in health issues → require text
+          if (m.healthIssue?.includes('Other') && !m.healthIssueOther?.trim()) {
+            errors[`h-healthIssueOther-${idx}`] = "Please specify the value.";
+          }
+          // "Other" in morbidity → require text
+          if (m.morbidity?.includes('Other') && !m.morbidityOther?.trim()) {
+            errors[`h-morbidityOther-${idx}`] = "Please specify the value.";
+          }
         });
       }
     } else if (s === 3) {
@@ -768,6 +780,10 @@ export function SurveyStepper({
             }
           }
           if (!m.educationLevel) errors[`e-level-${idx}`] = "Education level required";
+          // "Other" in educational issues → require text
+          if (m.educationalIssues?.includes('Other') && !m.educationalIssuesOther?.trim()) {
+            errors[`e-eduIssueOther-${idx}`] = "Please specify the value.";
+          }
         });
       }
     } else if (s === 4) {
@@ -794,6 +810,14 @@ export function SurveyStepper({
           if (!m.employmentStatus) errors[`u-status-${idx}`] = "Status required";
           if (!m.highestEducation) errors[`u-edu-${idx}`] = "Education required";
           if (m.employmentStatus === "Unemployed" && !m.unemploymentReason) errors[`u-reason-${idx}`] = "Reason required";
+          // "Other" in skills → require text
+          if (m.skills?.includes('Other') && !m.skillOther?.trim()) {
+            errors[`u-skillOther-${idx}`] = "Please specify the value.";
+          }
+          // "Other" in unemployment reason → require text
+          if (m.unemploymentReason === 'Other' && !m.unemploymentReasonOther?.trim()) {
+            errors[`u-reasonOther-${idx}`] = "Please specify the value.";
+          }
         });
       }
     }
@@ -1237,6 +1261,8 @@ export function SurveyStepper({
                                       onClick={() => {
                                         const updated = healthMembers[healthIdx]?.healthIssue.filter((i) => i !== issue) || [];
                                         updateHealthMember(healthIdx, "healthIssue", updated);
+                                        // clear otherValue if "Other" removed
+                                        if (issue === 'Other') updateHealthMember(healthIdx, "healthIssueOther", "");
                                       }}
                                       className="text-xs text-destructive hover:font-bold"
                                     >
@@ -1245,6 +1271,18 @@ export function SurveyStepper({
                                   </div>
                                 ))}
                               </div>
+                              {/* "Other" health issue text input */}
+                              {healthMembers[healthIdx]?.healthIssue?.includes('Other') && (
+                                <CompactInput
+                                  label="Please specify health issue"
+                                  id={`h-healthIssueOther-${healthIdx}`}
+                                  value={healthMembers[healthIdx]?.healthIssueOther || ""}
+                                  onChange={(v) => updateHealthMember(healthIdx, "healthIssueOther", v)}
+                                  placeholder="Describe the health issue"
+                                  required
+                                  error={getFieldError(`h-healthIssueOther-${healthIdx}`)}
+                                />
+                              )}
                             </div>
 
                             {/* Morbidity Selection */}
@@ -1278,6 +1316,7 @@ export function SurveyStepper({
                                       onClick={() => {
                                         const updated = healthMembers[healthIdx]?.morbidity.filter((m) => m !== morb) || [];
                                         updateHealthMember(healthIdx, "morbidity", updated);
+                                        if (morb === 'Other') updateHealthMember(healthIdx, "morbidityOther", "");
                                       }}
                                       className="text-xs text-destructive hover:font-bold"
                                     >
@@ -1286,6 +1325,18 @@ export function SurveyStepper({
                                   </div>
                                 ))}
                               </div>
+                              {/* "Other" morbidity text input */}
+                              {healthMembers[healthIdx]?.morbidity?.includes('Other') && (
+                                <CompactInput
+                                  label="Please specify morbidity"
+                                  id={`h-morbidityOther-${healthIdx}`}
+                                  value={healthMembers[healthIdx]?.morbidityOther || ""}
+                                  onChange={(v) => updateHealthMember(healthIdx, "morbidityOther", v)}
+                                  placeholder="Describe the problem"
+                                  required
+                                  error={getFieldError(`h-morbidityOther-${healthIdx}`)}
+                                />
+                              )}
 
                               {/* Error for Health Info */}
                               {getFieldError(`h-health-info-${healthIdx}`) && (
@@ -1421,9 +1472,27 @@ export function SurveyStepper({
                             <CompactCheckboxGroup
                               label="Type of Educational Issue"
                               selected={eduMembers[eduIdx]?.educationalIssues || []}
-                              onChange={(v) => updateEduMember(eduIdx, "educationalIssues", v)}
+                              onChange={(v) => {
+                                updateEduMember(eduIdx, "educationalIssues", v);
+                                // clear other text if "Other" is deselected
+                                if (!v.includes('Other')) {
+                                  updateEduMember(eduIdx, "educationalIssuesOther" as any, "");
+                                }
+                              }}
                               options={EDUCATION_ISSUES}
                             />
+                            {/* "Other" educational issue text input */}
+                            {eduMembers[eduIdx]?.educationalIssues?.includes('Other') && (
+                              <CompactInput
+                                label="Please specify educational issue"
+                                id={`e-eduIssueOther-${eduIdx}`}
+                                value={(eduMembers[eduIdx] as any)?.educationalIssuesOther || ""}
+                                onChange={(v) => updateEduMember(eduIdx, "educationalIssuesOther" as any, v)}
+                                placeholder="Describe the issue"
+                                required
+                                error={getFieldError(`e-eduIssueOther-${eduIdx}`)}
+                              />
+                            )}
                           </motion.div>
                         </AnimatePresence>
                       </div>
@@ -1560,20 +1629,56 @@ export function SurveyStepper({
                             <CompactCheckboxGroup
                               label="Skills Known"
                               selected={unempMembers[unempIdx]?.skills || []}
-                              onChange={(v) => updateUnempMember(unempIdx, "skills", v)}
+                              onChange={(v) => {
+                                updateUnempMember(unempIdx, "skills", v);
+                                // clear other text if "Other" is deselected
+                                if (!v.includes('Other')) {
+                                  updateUnempMember(unempIdx, "skillOther", "");
+                                }
+                              }}
                               options={SKILLS}
                             />
+                            {/* "Other" skill text input */}
+                            {unempMembers[unempIdx]?.skills?.includes('Other') && (
+                              <CompactInput
+                                label="Please specify skill"
+                                id={`u-skillOther-${unempIdx}`}
+                                value={unempMembers[unempIdx]?.skillOther || ""}
+                                onChange={(v) => updateUnempMember(unempIdx, "skillOther", v)}
+                                placeholder="Describe the skill"
+                                required
+                                error={getFieldError(`u-skillOther-${unempIdx}`)}
+                              />
+                            )}
                             {unempMembers[unempIdx]?.employmentStatus === "Unemployed" && (
                               <>
                                 <CompactDropdown
                                   label="Main Reason for Unemployment"
                                   value={unempMembers[unempIdx]?.unemploymentReason || ""}
-                                  onChange={(v) => updateUnempMember(unempIdx, "unemploymentReason", v)}
+                                  onChange={(v) => {
+                                    updateUnempMember(unempIdx, "unemploymentReason", v);
+                                    // clear other text when reason changes
+                                    if (v !== 'Other') {
+                                      updateUnempMember(unempIdx, "unemploymentReasonOther" as any, "");
+                                    }
+                                  }}
                                   options={UNEMPLOYMENT_REASONS}
                                   placeholder="Select reason"
                                   required
                                   error={getFieldError(`u-reason-${unempIdx}`)}
                                 />
+                                {/* "Other" unemployment reason text input */}
+                                {unempMembers[unempIdx]?.unemploymentReason === 'Other' && (
+                                  <CompactInput
+                                    label="Please specify unemployment reason"
+                                    id={`u-reasonOther-${unempIdx}`}
+                                    value={(unempMembers[unempIdx] as any)?.unemploymentReasonOther || ""}
+                                    onChange={(v) => updateUnempMember(unempIdx, "unemploymentReasonOther" as any, v)}
+                                    placeholder="Describe the reason"
+                                    required
+                                    error={getFieldError(`u-reasonOther-${unempIdx}`)}
+                                  />
+                                )}
                               </>
                             )}
 

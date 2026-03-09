@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { SurveyorApiService, type Village, type Survey, type SurveyorStats } from "@/lib/surveyor-api";
-import { LogOut, MapPin, Award, Loader2, FileText, Edit, AlertTriangle } from "lucide-react";
+import { LogOut, MapPin, Award, Loader2, FileText, Edit, AlertTriangle, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface SurveyorDashboardProps {
   surveyor: any;
@@ -28,8 +29,19 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [stats, setStats] = useState<SurveyorStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingSurveys, setIsLoadingSurveys] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPerformance, setShowPerformance] = useState(false);
+
+  // Pagination & Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    pages: 1,
+    limit: 10
+  });
 
   // Load initial data
   useEffect(() => {
@@ -55,20 +67,30 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
     }
   };
 
-  // Load surveys when village is selected
+  // Load surveys when village, page or search changes
   useEffect(() => {
     if (selectedVillage) {
-      loadSurveys(selectedVillage);
+      loadSurveys(selectedVillage, currentPage, searchQuery);
     }
-  }, [selectedVillage]);
+  }, [selectedVillage, currentPage, searchQuery]);
 
-  const loadSurveys = async (village: string) => {
+  const loadSurveys = async (village: string, page: number, search?: string) => {
     try {
-      const surveysResponse = await SurveyorApiService.getSurveys(village);
-      setSurveys(surveysResponse);
+      setIsLoadingSurveys(true);
+      const response = await SurveyorApiService.getSurveys(village, page, 10, search);
+      setSurveys(response.surveys);
+      setPagination(response.pagination);
     } catch (error: any) {
       console.error('Failed to load surveys:', error);
+    } finally {
+      setIsLoadingSurveys(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    setSearchQuery(searchInput);
   };
 
   const handleLogout = () => {
@@ -258,52 +280,155 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
         {/* Survey List */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Recent Surveys ({surveys.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[479px] overflow-y-auto pr-2 flex flex-col gap-2 custom-scrollbar">
-            {surveys.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">No surveys yet</p>
-            ) : (
-              surveys.map((survey) => (
-                <div key={survey._id} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="font-medium text-sm">{survey.representativeName}</p>
-                      <p className="text-xs text-muted-foreground">{survey.mobileNumber}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {survey.totalFamilyMembers} family members
-                      </p>
-                    </div>
-                    <Badge
-                      variant={
-                        survey.status === 'Verified' ? 'default' :
-                          survey.status === 'Submitted' ? 'secondary' :
-                            survey.status === 'Rejected' ? 'destructive' : 'outline'
-                      }
-                    >
-                      {survey.status}
-                    </Badge>
-                  </div>
+            <div className="flex flex-col gap-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Recent Surveys ({pagination.total})
+              </CardTitle>
 
-                  {/* Action Buttons — Update available for Draft / Submitted / Rejected */}
-                  {survey.status !== 'Verified' && (
-                    <div className="flex gap-2 mt-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleUpdateSurvey(survey._id)}
-                        className="flex-1 gap-1 h-7 text-xs"
-                      >
-                        <Edit className="size-3" />
-                        Update
-                      </Button>
-                    </div>
-                  )}
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, mobile, ID..."
+                    className="pl-8 h-9 text-xs"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                  />
                 </div>
-              ))
+                <Button type="submit" size="sm" className="h-9 px-3 text-xs">
+                  Search
+                </Button>
+              </form>
+            </div>
+          </CardHeader>
+          <CardContent className="min-h-[300px] max-h-[500px] overflow-y-auto pr-2 flex flex-col gap-2 custom-scrollbar relative">
+            {isLoadingSurveys ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-xs text-muted-foreground">Loading surveys...</p>
+              </div>
+            ) : surveys.length === 0 ? (
+              <div className="text-center py-12 flex flex-col gap-2">
+                <p className="text-muted-foreground text-sm">
+                  {searchQuery ? "No surveys found for your search." : "No surveys yet in this village."}
+                </p>
+                {searchQuery && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      setSearchInput("");
+                      setSearchQuery("");
+                      setCurrentPage(1);
+                    }}
+                  >
+                    Clear Search
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-2">
+                  {surveys.map((survey) => (
+                    <div key={survey._id} className="border rounded-lg p-3 hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium text-sm">{survey.representativeName}</p>
+                          <p className="text-xs text-muted-foreground">{survey.mobileNumber}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">
+                              ID: {survey._id.slice(-6).toUpperCase()}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {survey.totalFamilyMembers} members
+                            </span>
+                          </div>
+                        </div>
+                        <Badge
+                          className="h-5 text-[10px] px-1.5"
+                          variant={
+                            survey.status === 'Verified' ? 'default' :
+                              survey.status === 'Submitted' ? 'secondary' :
+                                survey.status === 'Rejected' ? 'destructive' : 'outline'
+                          }
+                        >
+                          {survey.status}
+                        </Badge>
+                      </div>
+
+                      {/* Action Buttons — Update available for Draft / Submitted / Rejected */}
+                      {survey.status !== 'Verified' && (
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleUpdateSurvey(survey._id)}
+                            className="flex-1 gap-1 h-7 text-xs"
+                          >
+                            <Edit className="size-3" />
+                            Update
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {pagination.pages > 1 && (
+                  <div className="sticky bottom-0 mt-4 pt-2 bg-card border-t flex items-center justify-between">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={currentPage === 1 || isLoadingSurveys}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className="h-8 px-2 text-xs gap-1"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                      Prev
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(pagination.pages, 100) }, (_, i) => i + 1)
+                        // Show limited page numbers if too many
+                        .filter(p => {
+                          if (pagination.pages <= 5) return true;
+                          return Math.abs(p - currentPage) <= 1 || p === 1 || p === pagination.pages;
+                        })
+                        .map((p, i, arr) => (
+                          <React.Fragment key={p}>
+                            {i > 0 && arr[i - 1] !== p - 1 && (
+                              <span className="text-xs text-muted-foreground">...</span>
+                            )}
+                            <Button
+                              variant={currentPage === p ? "default" : "ghost"}
+                              size="sm"
+                              onClick={() => setCurrentPage(p)}
+                              className={`h-7 w-7 p-0 text-xs ${currentPage === p ? "pointer-events-none" : ""}`}
+                            >
+                              {p}
+                            </Button>
+                          </React.Fragment>
+                        ))
+                      }
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={currentPage === pagination.pages || isLoadingSurveys}
+                      onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
+                      className="h-8 px-2 text-xs gap-1"
+                    >
+                      Next
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
