@@ -5,9 +5,9 @@ const HealthIssueSchema = new mongoose.Schema({
   patientName: { type: String, required: true, maxlength: 100 },
   age: { type: Number, required: true, min: 0, max: 120 },
   gender: { type: String, required: true, enum: ['Male', 'Female', 'Other'] },
-  healthIssueType: { type: String, required: true, enum: healthIssues },
+  healthIssueType: [{ type: String, enum: healthIssues }],
   otherHealthIssue: String,
-  hasAdditionalMorbidity: { type: String, required: true, enum: ['Yes', 'No'] },
+  hasAdditionalMorbidity: [{ type: String, enum: ['Knee Pain', 'Back Pain', 'Leg Pain', 'Joint Pain', 'Paralysis', 'Other'] }],
   additionalMorbidityDetails: String
 });
 
@@ -34,10 +34,22 @@ const UnemployedMemberSchema = new mongoose.Schema({
   name: { type: String, required: true, maxlength: 100 },
   age: { type: Number, required: true, min: 15, max: 100 },
   gender: { type: String, required: true, enum: ['Male', 'Female', 'Other'] },
-  highestEducation: { type: String, required: true, enum: ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Graduate', 'Postgraduate'] },
+  employmentStatus: { type: String, required: true, enum: ['Suboptimally Employed','Unemployed']},
+  highestEducation: {
+    type: String,
+    required: true, 
+    enum: ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Graduate', 'Postgraduate'] 
+  },
   skillsKnown: [{ type: String, enum: skills }],
   otherSkills: String,
-  unemploymentReason: { type: String, required: true, enum: unemploymentReasons },
+  unemploymentReason: { 
+    type: String, 
+    required: function() {
+      return this.employmentStatus === 'Unemployed';
+    },
+    enum: unemploymentReasons,
+    sparse: true
+  },
   otherReason: String
 });
 
@@ -51,6 +63,7 @@ const HouseholdSurveySchema = new mongoose.Schema({
       message: 'Mobile number must be 10 digits'
     }
   },
+  isWhatsAppNumber: { type: String, required: true, enum: ['Yes', 'No'] },
   representativeAge: { type: Number, required: true, min: 18, max: 120 },
   representativeGender: { type: String, required: true, enum: ['Male', 'Female', 'Other'] },
   totalFamilyMembers: { type: Number, required: true, min: 1, max: 50 },

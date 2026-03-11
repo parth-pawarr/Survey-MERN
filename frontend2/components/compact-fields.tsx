@@ -21,6 +21,8 @@ interface CompactInputProps {
   placeholder?: string;
   required?: boolean;
   maxLength?: number;
+  min?: number;
+  max?: number;
   error?: string;
 }
 
@@ -33,6 +35,8 @@ export function CompactInput({
   placeholder = "",
   required = false,
   maxLength,
+  min,
+  max,
   error,
 }: CompactInputProps) {
   return (
@@ -46,12 +50,29 @@ export function CompactInput({
         type={type}
         value={value}
         onChange={(e) => {
-          if (maxLength && e.target.value.length > maxLength) return;
-          onChange(e.target.value);
+          let val = e.target.value;
+          if (maxLength && val.length > maxLength) return;
+
+          if (type === "number") {
+            // Prevent negative sign and other non-numeric chars for positive-only fields
+            // Allow empty string so user can clear the field
+            if (val !== "" && !/^\d+$/.test(val)) return;
+
+            // Validate min if provided
+            if (min !== undefined && val !== "" && Number(val) < min) {
+              // Optionally we could just return, or set it to min
+              // But if the user types '0' and min is 1, they might be typing '05'
+              // So for now, we'll just prevent negative values at the input level
+            }
+          }
+
+          onChange(val);
         }}
         placeholder={placeholder}
         className="h-8 text-sm"
         maxLength={maxLength}
+        min={min}
+        max={max}
         inputMode={type === "number" ? "numeric" : undefined}
       />
       {error && <p className="text-xs text-destructive">{error}</p>}
@@ -65,6 +86,7 @@ interface PhoneInputProps {
   value: string;
   onChange: (val: string) => void;
   required?: boolean;
+  error?: string;
 }
 
 export function PhoneInput({
@@ -73,6 +95,7 @@ export function PhoneInput({
   value,
   onChange,
   required = false,
+  error,
 }: PhoneInputProps) {
   const isValid = value.length === 0 || value.length === 10;
   return (
@@ -92,14 +115,16 @@ export function PhoneInput({
           onChange(digits);
         }}
         placeholder="Enter 10-digit number"
-        className="h-8 text-sm"
+        className={`h-8 text-sm ${error || (!isValid && value.length > 0) ? "border-destructive" : ""}`}
         maxLength={10}
       />
-      {!isValid && value.length > 0 && (
-        <p className="text-xs text-destructive">
+      {error ? (
+        <p className="text-[10px] leading-tight text-destructive">{error}</p>
+      ) : !isValid && value.length > 0 ? (
+        <p className="text-[10px] leading-tight text-destructive">
           Phone number must be exactly 10 digits
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -109,6 +134,8 @@ interface CompactRadioGroupProps {
   value: string;
   onChange: (val: string) => void;
   options: string[];
+  required?: boolean;
+  error?: string;
 }
 
 export function CompactRadioGroup({
@@ -116,10 +143,15 @@ export function CompactRadioGroup({
   value,
   onChange,
   options,
+  required = false,
+  error,
 }: CompactRadioGroupProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-xs">{label}</Label>
+      <Label className="text-xs">
+        {label}
+        {required && <span className="text-destructive ml-0.5">*</span>}
+      </Label>
       <RadioGroup value={value} onValueChange={onChange} className="flex flex-wrap gap-x-4 gap-y-2">
         {options.map((opt) => (
           <div key={opt} className="flex items-center gap-1.5">
@@ -130,6 +162,7 @@ export function CompactRadioGroup({
           </div>
         ))}
       </RadioGroup>
+      {error && <p className="text-[10px] leading-tight text-destructive">{error}</p>}
     </div>
   );
 }
@@ -140,6 +173,8 @@ interface CompactDropdownProps {
   onChange: (val: string) => void;
   options: string[];
   placeholder?: string;
+  required?: boolean;
+  error?: string;
 }
 
 export function CompactDropdown({
@@ -148,12 +183,17 @@ export function CompactDropdown({
   onChange,
   options,
   placeholder = "Select...",
+  required = false,
+  error,
 }: CompactDropdownProps) {
   return (
     <div className="flex flex-col gap-1">
-      <Label className="text-xs">{label}</Label>
+      <Label className="text-xs">
+        {label}
+        {required && <span className="text-destructive ml-0.5">*</span>}
+      </Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8 text-sm w-full">
+        <SelectTrigger className={`h-8 text-sm w-full ${error ? "border-destructive text-destructive" : ""}`}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -164,6 +204,7 @@ export function CompactDropdown({
           ))}
         </SelectContent>
       </Select>
+      {error && <p className="text-[10px] leading-tight text-destructive">{error}</p>}
     </div>
   );
 }
@@ -173,6 +214,8 @@ interface CompactCheckboxGroupProps {
   selected: string[];
   onChange: (val: string[]) => void;
   options: string[];
+  required?: boolean;
+  error?: string;
 }
 
 export function CompactCheckboxGroup({
@@ -180,6 +223,8 @@ export function CompactCheckboxGroup({
   selected,
   onChange,
   options,
+  required = false,
+  error,
 }: CompactCheckboxGroupProps) {
   const toggle = (opt: string) => {
     if (selected.includes(opt)) {
@@ -191,12 +236,15 @@ export function CompactCheckboxGroup({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-xs">{label}</Label>
+      <Label className="text-xs">
+        {label}
+        {required && <span className="text-destructive ml-0.5">*</span>}
+      </Label>
       <div className="grid grid-cols-2 gap-1.5">
         {options.map((opt) => (
           <label
             key={opt}
-            className="flex items-center gap-1.5 text-xs cursor-pointer rounded border p-1.5"
+            className={`flex items-center gap-1.5 text-xs cursor-pointer rounded border p-1.5 ${error ? "border-destructive" : ""}`}
           >
             <Checkbox
               checked={selected.includes(opt)}
@@ -206,6 +254,7 @@ export function CompactCheckboxGroup({
           </label>
         ))}
       </div>
+      {error && <p className="text-[10px] leading-tight text-destructive">{error}</p>}
     </div>
   );
 }
@@ -217,6 +266,11 @@ interface AgeGenderRowProps {
   onGenderChange: (v: string) => void;
   ageId: string;
   genderOptions: string[];
+  required?: boolean;
+  min?: number;
+  max?: number;
+  ageError?: string;
+  genderError?: string;
 }
 
 export function AgeGenderRow({
@@ -226,6 +280,11 @@ export function AgeGenderRow({
   onGenderChange,
   ageId,
   genderOptions,
+  required = false,
+  min,
+  max,
+  ageError,
+  genderError,
 }: AgeGenderRowProps) {
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -236,6 +295,11 @@ export function AgeGenderRow({
         onChange={onAgeChange}
         type="number"
         placeholder="Age"
+        maxLength={3}
+        min={min}
+        max={max}
+        required={required}
+        error={ageError}
       />
       <CompactDropdown
         label="Gender"
@@ -243,6 +307,8 @@ export function AgeGenderRow({
         onChange={onGenderChange}
         options={genderOptions}
         placeholder="Gender"
+        required={required}
+        error={genderError}
       />
     </div>
   );

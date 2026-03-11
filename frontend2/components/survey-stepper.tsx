@@ -292,13 +292,13 @@ export function SurveyStepper({
       householdData: {
         representativeName: repName,
         mobile,
+        isWhatsApp,
         age: Number(age),
         gender,
         totalFamilyMembers: Number(totalMembers),
         ayushmanStatus,
         ayushmanMembersCount:
           ayushmanStatus === "Some Members Have" ? Number(ayushmanCount) : undefined,
-        isWhatsApp,
       },
       healthcare: hasHealthIssue === "Yes" ? healthMembers : [],
       education: hasEduIssue === "Yes" ? eduMembers : [],

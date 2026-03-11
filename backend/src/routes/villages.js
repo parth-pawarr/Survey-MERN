@@ -10,36 +10,45 @@ const router = express.Router();
 router.use(protect);
 
 // Get surveyor's assigned villages
+// User.assignedVillages is an array of village names (strings), not ObjectId refs
 router.get('/mine', async (req, res) => {
   try {
-    const surveyor = await User.findById(req.user._id).populate('assignedVillages');
+    const surveyor = await User.findById(req.user._id);
     
     if (!surveyor) {
       return res.status(404).json({ message: 'Surveyor not found' });
     }
     
-    // Get survey statistics for each assigned village
+    const villageNames = surveyor.assignedVillages || [];
+    
+    if (villageNames.length === 0) {
+      return res.json([]);
+    }
+    
+    // Look up Village documents by name to get _id, then add survey stats
     const villagesWithStats = await Promise.all(
-      surveyor.assignedVillages.map(async (village) => {
+      villageNames.map(async (villageName) => {
+        const villageDoc = await Village.findOne({ name: villageName });
         const [totalSurveys, verifiedSurveys, submittedSurveys] = await Promise.all([
           HouseholdSurvey.countDocuments({ 
-            village: village.name, 
+            village: villageName, 
             surveyorId: req.user._id 
           }),
           HouseholdSurvey.countDocuments({ 
-            village: village.name, 
+            village: villageName, 
             surveyorId: req.user._id,
             status: 'Verified' 
           }),
           HouseholdSurvey.countDocuments({ 
-            village: village.name, 
+            village: villageName, 
             surveyorId: req.user._id,
             status: 'Submitted' 
           })
         ]);
         
         return {
-          ...village.toObject(),
+          _id: villageDoc?._id || villageName,
+          name: villageName,
           surveyStats: {
             totalSurveys,
             verifiedSurveys,
@@ -60,7 +69,7 @@ router.get('/mine', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const villages = await Village.find()
-      .select('name totalHouseholds surveyedHouseholds assignedSurveyors')
+      .select('name assignedSurveyors')
       .sort({ name: 1 });
     
     res.json(villages);

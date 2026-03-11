@@ -36,7 +36,7 @@ export interface UnemploymentMember {
   highestEducation: string;
   skills: string[];
   skillOther?: string;
-  unemploymentReason: string;
+  unemploymentReason?: string;  // Only required when employmentStatus === 'Unemployed'
   unemploymentReasonOther?: string;
 }
 
@@ -46,12 +46,12 @@ export interface SurveyData {
   householdData: {
     representativeName: string;
     mobile: string;
+    isWhatsApp: string;
     age: number;
     gender: string;
     totalFamilyMembers: number;
     ayushmanStatus: string;
     ayushmanMembersCount?: number;
-    isWhatsApp?: string;
   };
   healthcare: HealthMember[];
   education: EducationMember[];
@@ -95,7 +95,7 @@ export const MORBIDITY_OPTIONS = [
 ];
 
 export const EDUCATION_LEVELS = [
-  "Not Enrolled",
+  "Not enrolled",
   "Anganwadi",
   "Primary",
   "Secondary",
@@ -106,9 +106,15 @@ export const EDUCATION_LEVELS = [
 ];
 
 export const EDUCATION_ISSUES = [
-  "Financial Problem",
-  "Poor Academic Performance",
-  "Health Issues",
+  "Financial problem",
+  "Transportation issue",
+  "Poor academic performance",
+  "Dropped out",
+  "Lack of digital access",
+  "Lack of books/material",
+  "Health issue",
+  "Family responsibility",
+  "Other",
 ];
 
 export const UNEMPLOYMENT_EDUCATION = [
@@ -121,35 +127,36 @@ export const UNEMPLOYMENT_EDUCATION = [
 ];
 
 export const SKILLS = [
-  "Traditional 12 Balutedar Skills",
+  "12 Balutedar (बारा बलुतेदार)",
   "Farming",
   "Mason",
   "Electrician",
   "Plumbing",
   "Driving",
+  "Computer skills",
+  "Mobile repair",
+  "Handicrafts",
+  "Cooking",
+  "Hardware",
   "Other",
 ];
 
 export const UNEMPLOYMENT_REASONS = [
-  "No Skills",
-  "Low Education",
-  "Health Issue",
-  "No Job Opportunities",
-  "Financial Problems",
-  "Family Responsibilities",
-  "Migration Issue",
+  "No skills",
+  "Low education",
+  "Health issue",
+  "No job opportunities",
+  "Financial problems",
+  "Family responsibilities",
+  "Migration issue",
   "Other",
 ];
 
 export const GENDERS = ["Male", "Female", "Other"];
 
-// Hardcoded admin credentials
-export const ADMIN_CREDENTIALS = {
-  username: "admin",
-  password: "admin123",
-};
+// Hardcoded admin credentials — REMOVED (use backend auth via /api/auth/login)
 
-// LocalStorage helpers
+// LocalStorage helpers (used for offline draft saving)
 export function getSurveyors(): Surveyor[] {
   if (typeof window === "undefined") return [];
   const data = localStorage.getItem("surveyors");
@@ -175,34 +182,6 @@ export function saveSurvey(survey: SurveyData) {
 export function checkDuplicate(village: string, mobile: string): boolean {
   const surveys = getSurveys();
   return surveys.some((s) => s.village === village && s.householdData.mobile === mobile);
-}
-
-export function authenticateSurveyor(
-  username: string,
-  password: string
-): Surveyor | null {
-  const surveyors = getSurveyors();
-  return (
-    surveyors.find(
-      (s) => s.username === username && s.password === password
-    ) || null
-  );
-}
-
-export function authenticateUser(
-  username: string,
-  password: string
-): { role: "admin" } | { role: "surveyor"; surveyor: Surveyor } | null {
-  // Check admin first
-  if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-    return { role: "admin" };
-  }
-  // Check surveyors
-  const surveyor = authenticateSurveyor(username, password);
-  if (surveyor) {
-    return { role: "surveyor", surveyor };
-  }
-  return null;
 }
 
 export function getSurveysBySurveyor(surveyorId: string): SurveyData[] {

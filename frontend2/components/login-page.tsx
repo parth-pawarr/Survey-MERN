@@ -5,36 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  type Surveyor,
-  authenticateUser,
-} from "@/lib/store";
-import { AlertTriangle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
 interface LoginPageProps {
   onAdminLogin: () => void;
-  onSurveyorLogin: (surveyor: Surveyor) => void;
+  onSurveyorLogin: (surveyor: any) => void;
 }
 
 export function LoginPage({ onAdminLogin, onSurveyorLogin }: LoginPageProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const { login, isLoading, error, clearError } = useAuth();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!username || !password) {
-      setError("Invalid username or password.");
       return;
     }
-    const result = authenticateUser(username, password);
-    if (!result) {
-      setError("Invalid username or password.");
-      return;
-    }
-    if (result.role === "admin") {
-      onAdminLogin();
-    } else {
-      onSurveyorLogin(result.surveyor);
+
+    try {
+      clearError();
+      await login({ username, password });
+      // AuthContext updates isAuthenticated + user on LOGIN_SUCCESS,
+      // which triggers the useEffect in page.tsx — no reload needed.
+    } catch (error) {
+      // Error is handled and surfaced via AuthContext's error state
+      console.error('Login error:', error);
     }
   };
 
@@ -53,13 +49,14 @@ export function LoginPage({ onAdminLogin, onSurveyorLogin }: LoginPageProps) {
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="login-username" className="text-xs">Username</Label>
+            <Label htmlFor="login-username" className="text-xs">Username / Mobile Number</Label>
             <Input
               id="login-username"
-              placeholder="Enter username"
+              placeholder="Enter username or mobile"
               value={username}
-              onChange={(e) => { setUsername(e.target.value); setError(""); }}
+              onChange={(e) => { setUsername(e.target.value); clearError(); }}
               className="h-9"
+              disabled={isLoading}
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -69,12 +66,26 @@ export function LoginPage({ onAdminLogin, onSurveyorLogin }: LoginPageProps) {
               type="password"
               placeholder="Enter password"
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(""); }}
+              onChange={(e) => { setPassword(e.target.value); clearError(); }}
               className="h-9"
               onKeyDown={(e) => { if (e.key === "Enter") handleLogin(); }}
+              disabled={isLoading}
             />
           </div>
-          <Button onClick={handleLogin} className="mt-1">Login</Button>
+          <Button
+            onClick={handleLogin}
+            className="mt-1"
+            disabled={isLoading || !username || !password}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Logging in...
+              </>
+            ) : (
+              'Login'
+            )}
+          </Button>
         </CardContent>
       </Card>
     </div>
