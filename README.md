@@ -1,5 +1,7 @@
 # HOUSEHOLD SURVEY APPLICATION - DETAILED PRS DOCUMENT
 
+#Parth Pawar
+
 ## Executive Summary
 A comprehensive MERN-stack household survey application designed for government social welfare programs (Ayushman Bharat, educational support, employment schemes). The platform enables trained surveyors to collect socio-economic data across villages with admin oversight, real-time analytics, and secure data management.
 
