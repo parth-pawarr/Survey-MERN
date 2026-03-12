@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
   const [stats, setStats] = useState<SurveyorStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingSurveys, setIsLoadingSurveys] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showPerformance, setShowPerformance] = useState(false);
 
   // Pagination & Search state
@@ -51,7 +51,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      setError(null);
 
       const [villagesResponse, statsResponse] = await Promise.all([
         SurveyorApiService.getAssignedVillages(),
@@ -61,7 +60,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
       setVillages(villagesResponse);
       setStats(statsResponse);
     } catch (error: any) {
-      setError(error.message || 'Failed to load data');
+      toast.error(error.message || 'Failed to load data');
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +81,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
       setPagination(response.pagination);
     } catch (error: any) {
       console.error('Failed to load surveys:', error);
+      toast.error('Failed to load surveys');
     } finally {
       setIsLoadingSurveys(false);
     }
@@ -151,13 +151,8 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
           </div>
         </header>
 
-        {error && (
-          <div className="mx-4 mt-4 p-3 rounded-lg border border-destructive/50 bg-destructive/10">
-            <p className="text-sm text-destructive">{error}</p>
-          </div>
-        )}
 
-        {villages.length === 0 && !error && (
+        {villages.length === 0 && (
           <div className="mx-4 mt-4 p-4 rounded-lg border border-muted bg-muted/30">
             <p className="text-sm text-muted-foreground text-center">
               No villages assigned yet. Please contact your admin to assign villages to your account.

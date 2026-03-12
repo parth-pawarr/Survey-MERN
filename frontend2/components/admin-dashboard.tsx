@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [totalSurveyors, setTotalSurveyors] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
 
   useEffect(() => {
@@ -34,7 +34,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      setError(null);
       // Fetch 1st page of surveyors + villages
       const [surveyorsResponse, villagesResponse] = await Promise.all([
         AdminApiService.getSurveyors(1, 10),
@@ -54,7 +53,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
       setVillages(villagesResponse.villages);
     } catch (error: any) {
-      setError(error.message || "Failed to load data");
+      toast.error(error.message || "Failed to load data");
     } finally {
       setIsLoading(false);
     }
@@ -119,11 +118,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         </div>
       </header>
 
-      {error && (
-        <div className="mx-4 mt-4 p-3 rounded-lg border border-destructive/50 bg-destructive/10">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
-      )}
 
       <main className="mx-auto max-w-4xl p-4 flex flex-col gap-4">
         {/* Overview Cards */}
@@ -221,8 +215,6 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
   const [mobileNumber, setMobileNumber] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const generatePassword = () => {
     const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -250,26 +242,22 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
     const digits = val.replace(/\D/g, "").slice(0, 10);
     setMobileNumber(digits);
     if (digits.length > 0 && digits.length !== 10) {
-      setError("Mobile number must be exactly 10 digits");
-    } else {
-      setError("");
+      toast.error("Mobile number must be exactly 10 digits");
     }
   };
 
   const handleSubmit = async () => {
     if (!firstName || !lastName || !mobileNumber || !password) {
-      setError("All fields are required");
+      toast.error("All fields are required");
       return;
     }
     if (mobileNumber.length !== 10) {
-      setError("Mobile number must be exactly 10 digits");
+      toast.error("Mobile number must be exactly 10 digits");
       return;
     }
 
     try {
       setIsLoading(true);
-      setError("");
-      setSuccess("");
       await AdminApiService.createSurveyor({
         username: mobileNumber, // username is same as mobile
         firstName,
@@ -283,10 +271,10 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
       setLastName("");
       setMobileNumber("");
       setPassword("");
-      setSuccess("Surveyor created! Assign villages from the Surveyors list below.");
+      toast.success("Surveyor created! Assign villages from the Surveyors list below.");
       onSurveyorAdded();
     } catch (error: any) {
-      setError(error.message || "Failed to create surveyor");
+      toast.error(error.message || "Failed to create surveyor");
     } finally {
       setIsLoading(false);
     }
@@ -361,13 +349,6 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
           </div>
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        {success && (
-          <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 border border-green-200 rounded p-2">
-            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-            {success}
-          </div>
-        )}
 
         <Button
           onClick={handleSubmit}
@@ -388,21 +369,20 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
 function AddVillageSection({ onVillageAdded }: { onVillageAdded: () => void }) {
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
     if (!name) {
-      setError("Please enter a village name");
+      toast.error("Please enter a village name");
       return;
     }
     try {
       setIsLoading(true);
-      setError("");
       await AdminApiService.createVillage({ name, assignedSurveyors: [] });
       setName("");
+      toast.success("Village added successfully!");
       onVillageAdded();
     } catch (error: any) {
-      setError(error.message || "Failed to create village");
+      toast.error(error.message || "Failed to create village");
     } finally {
       setIsLoading(false);
     }
@@ -425,7 +405,6 @@ function AddVillageSection({ onVillageAdded }: { onVillageAdded: () => void }) {
             className="h-9"
           />
         </div>
-        {error && <p className="text-xs text-destructive">{error}</p>}
         <Button onClick={handleSubmit} disabled={isLoading || !name} className="h-8">
           {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
           Add Village
@@ -458,7 +437,6 @@ function SurveyorListSection({
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [loadingToggleId, setLoadingToggleId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSurveyors();
@@ -467,12 +445,11 @@ function SurveyorListSection({
   const fetchSurveyors = async () => {
     try {
       setIsLoadingList(true);
-      setError(null);
       const response = await AdminApiService.getSurveyors(currentPage, 10, searchQuery);
       setSurveyors(response.surveyors);
       setPagination(response.pagination);
     } catch (err: any) {
-      setError(err.message || "Failed to load surveyors");
+      toast.error(err.message || "Failed to load surveyors");
     } finally {
       setIsLoadingList(false);
     }
@@ -486,13 +463,13 @@ function SurveyorListSection({
 
   const toggleStatus = async (surveyorId: string, currentStatus: boolean) => {
     try {
-      setError(null);
       setLoadingToggleId(surveyorId);
       await AdminApiService.toggleSurveyorStatus(surveyorId, !currentStatus);
       fetchSurveyors(); // update local list
       onUpdated(); // update parent stats
+      toast.success(`Surveyor ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
     } catch (error: any) {
-      setError(error.message || "Failed to toggle status");
+      toast.error(error.message || "Failed to toggle status");
     } finally {
       setLoadingToggleId(null);
     }
@@ -522,11 +499,6 @@ function SurveyorListSection({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 min-h-[300px]">
-        {error && (
-          <div className="p-2 rounded-lg border border-destructive/50 bg-destructive/10">
-            <p className="text-xs text-destructive">{error}</p>
-          </div>
-        )}
 
         {isLoadingList ? (
           <div className="flex flex-col items-center justify-center py-12 gap-2">
@@ -700,7 +672,6 @@ function AssignVillagesPanel({
 }) {
   const [selected, setSelected] = useState<string[]>(surveyor.assignedVillages);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const toggle = (villageName: string) => {
@@ -715,13 +686,13 @@ function AssignVillagesPanel({
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      setError("");
       setSuccess(false);
       await AdminApiService.updateSurveyorVillages(surveyor._id, selected);
       setSuccess(true);
+      toast.success("Villages assigned successfully!");
       setTimeout(onSaved, 800);   // short delay so user sees the ✓
     } catch (err: any) {
-      setError(err.message || "Failed to save village assignment");
+      toast.error(err.message || "Failed to save village assignment");
     } finally {
       setIsSaving(false);
     }
@@ -761,8 +732,6 @@ function AssignVillagesPanel({
           );
         })}
       </div>
-
-      {error && <p className="text-xs text-destructive">{error}</p>}
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">

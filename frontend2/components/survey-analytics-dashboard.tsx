@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -145,7 +146,6 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
   const [perf, setPerf] = useState<PerfData | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState("healthcare");
   // ── Village filter state ─────────────────────────────────────────────────
@@ -184,7 +184,7 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (e: any) {
-      alert(e.message || "Export failed");
+      toast.error(e.message || "Export failed");
     } finally {
       setExporting(false);
     }
@@ -205,7 +205,7 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
       setPerf(p as any);
       setLastRefresh(new Date());
     } catch (e: any) {
-      setErr(e.message || "Failed to load analytics");
+      toast.error(e.message || "Failed to load analytics");
     } finally {
       setLoading(false);
     }
@@ -240,15 +240,15 @@ export function SurveyAnalyticsDashboard({ onClose }: Props) {
       </div>
     );
 
-  if (err || !dash || !analytics || !perf)
+  if (!dash || !analytics || !perf)
     return (
       <div className="p-6 space-y-3">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {err || "Failed to load analytics"}
+        <div className="rounded-xl border border-muted bg-muted/30 p-8 text-center">
+          <p className="text-sm text-muted-foreground mb-4">No data available or failed to load analytics.</p>
+          <Button onClick={() => load(selectedVillages)} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" /> Retry
+          </Button>
         </div>
-        <Button onClick={() => load(selectedVillages)} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" /> Retry
-        </Button>
       </div>
     );
 

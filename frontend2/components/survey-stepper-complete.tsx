@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProgressIndicator } from "@/components/progress-indicator";
@@ -141,7 +142,6 @@ export function SurveyStepper({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrefilling, setIsPrefilling] = useState(mode === 'update');
-  const [error, setError] = useState<string | null>(null);
 
   // Mobile validation state
   const [isValidatingMobile, setIsValidatingMobile] = useState(false);
@@ -230,7 +230,7 @@ export function SurveyStepper({
         }
       }).catch((err: any) => {
         console.error('Failed to load survey for update:', err);
-        setError('Failed to load survey data. Please go back and try again.');
+        toast.error('Failed to load survey data. Please go back and try again.');
       }).finally(() => {
         setIsPrefilling(false);
       });
@@ -433,6 +433,7 @@ export function SurveyStepper({
       if (result.exists) {
         setIsDuplicate(true);
         setMobileValidated(false);
+        toast.error("Mobile number already used.");
       } else {
         setIsDuplicate(false);
         setMobileValidated(true);
@@ -440,6 +441,7 @@ export function SurveyStepper({
     } catch {
       // If the check fails, we silently allow the user to continue
       setMobileValidated(null);
+      toast.error("Cloud not validate mobile number. Please try again.");
     } finally {
       setIsValidatingMobile(false);
     }
@@ -857,7 +859,6 @@ export function SurveyStepper({
 
     try {
       setIsSubmitting(true);
-      setError(null);
 
       const formData = getCurrentFormData();
       const requestData = SurveyApiService.formDataToRequest(formData, village);
@@ -879,9 +880,10 @@ export function SurveyStepper({
       SurveyApiService.clearDraft();
       SurveyApiService.clearCurrentSurvey();
 
+      toast.success(mode === 'update' ? 'Survey updated successfully!' : 'Survey submitted successfully!');
       onComplete();
     } catch (error: any) {
-      setError(error.message || 'Failed to submit survey');
+      toast.error(error.message || 'Failed to submit survey');
     } finally {
       setIsSubmitting(false);
     }
@@ -925,12 +927,6 @@ export function SurveyStepper({
         </div>
       )}
 
-      {/* Error Display */}
-      {error && (
-        <div className="mx-4 mt-4 p-3 rounded-lg border border-destructive/50 bg-destructive/10">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
-      )}
 
       {/* Loading overlay while pre-filling update data */}
       {isPrefilling && (

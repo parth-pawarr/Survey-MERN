@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,9 +29,10 @@ export function LoginPage({ onAdminLogin, onSurveyorLogin }: LoginPageProps) {
       await login({ username, password });
       // AuthContext updates isAuthenticated + user on LOGIN_SUCCESS,
       // which triggers the useEffect in page.tsx — no reload needed.
-    } catch (error) {
+    } catch (err: any) {
       // Error is handled and surfaced via AuthContext's error state
-      console.error('Login error:', error);
+      console.error('Login error:', err);
+      toast.error(err.message || 'Login failed. Please check your credentials.');
     }
   };
 
@@ -42,12 +44,6 @@ export function LoginPage({ onAdminLogin, onSurveyorLogin }: LoginPageProps) {
           <p className="text-sm text-muted-foreground">Login to continue</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          {error && (
-            <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3">
-              <AlertTriangle className="size-4 text-destructive shrink-0" />
-              <p className="text-xs text-destructive font-medium">{error}</p>
-            </div>
-          )}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="login-username" className="text-xs">Username / Mobile Number</Label>
             <Input
