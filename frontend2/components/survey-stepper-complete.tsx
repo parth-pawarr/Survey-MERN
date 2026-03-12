@@ -981,7 +981,7 @@ export function SurveyStepper({
           >
             {step === 1 && (
               <Card>
-                <CardHeader className="pb-4">
+                <CardHeader>
                   <CardTitle className="text-lg">Household Information</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
@@ -1131,13 +1131,8 @@ export function SurveyStepper({
 
             {step === 2 && (
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader>
                   <CardTitle className="text-sm">Healthcare Section</CardTitle>
-                  {totalMemberLimit > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Members: {currentMemberCount}/{totalMemberLimit}
-                    </p>
-                  )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
                   <CompactRadioGroup
@@ -1367,13 +1362,8 @@ export function SurveyStepper({
 
             {step === 3 && (
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader>
                   <CardTitle className="text-sm">Education Section</CardTitle>
-                  {totalMemberLimit > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Members: {currentMemberCount}/{totalMemberLimit}
-                    </p>
-                  )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
                   <CompactRadioGroup
@@ -1515,13 +1505,8 @@ export function SurveyStepper({
 
             {step === 4 && (
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader>
                   <CardTitle className="text-sm">Employment Section</CardTitle>
-                  {totalMemberLimit > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Members: {currentMemberCount}/{totalMemberLimit}
-                    </p>
-                  )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
                   <CompactRadioGroup
