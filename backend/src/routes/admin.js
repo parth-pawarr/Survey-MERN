@@ -6,6 +6,7 @@ const {
   updateSurveyor,
   updateSurveyorVillages,
   toggleSurveyorStatus,
+  deleteSurveyor,
   getSurveyor,
   resetSurveyorPassword,
   // Village management
@@ -43,6 +44,7 @@ router.get('/surveyors/:id', getSurveyor); // Get single surveyor with details
 router.put('/surveyors/:id', updateSurveyor); // Update surveyor details
 router.put('/surveyors/:id/villages', updateSurveyorVillages); // Assign/remove villages
 router.patch('/surveyors/:id/status', toggleSurveyorStatus); // Activate/deactivate
+router.delete('/surveyors/:id', deleteSurveyor); // Delete surveyor
 router.patch('/surveyors/:id/reset-password', resetSurveyorPassword); // Reset password
 
 // Village Management Routes

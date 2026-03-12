@@ -11,7 +11,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminApiService, type Surveyor, type Village } from "@/lib/admin-api";
 import { SurveyAnalyticsDashboard } from "./survey-analytics-dashboard";
-import { LogOut, Loader2, Users, MapPin, BarChart3, TrendingUp, ChevronDown, ChevronUp, CheckCircle2, Search, ChevronLeft, ChevronRight, Key } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { LogOut, Loader2, Users, MapPin, BarChart3, TrendingUp, ChevronDown, ChevronUp, CheckCircle2, Search, ChevronLeft, ChevronRight, Key, Trash2 } from "lucide-react";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -458,7 +466,24 @@ function SurveyorListSection({
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [loadingToggleId, setLoadingToggleId] = useState<string | null>(null);
+  const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
+  const [resetPasswordSurveyor, setResetPasswordSurveyor] = useState<Surveyor | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [resetPasswordError, setResetPasswordError] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const generatePassword = () => {
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const num = "0123456789";
+    const all = upper + lower + num;
+    let p = upper[Math.floor(Math.random() * upper.length)]
+      + lower[Math.floor(Math.random() * lower.length)]
+      + num[Math.floor(Math.random() * num.length)];
+    for (let i = 0; i < 5; i++) p += all[Math.floor(Math.random() * all.length)];
+    setResetPasswordValue(p.split("").sort(() => 0.5 - Math.random()).join(""));
+  };
 
   useEffect(() => {
     fetchSurveyors();
@@ -495,6 +520,45 @@ function SurveyorListSection({
       setError(error.message || "Failed to toggle status");
     } finally {
       setLoadingToggleId(null);
+    }
+  };
+
+  const handleDelete = async (surveyorId: string) => {
+    if (!confirm("Are you sure you want to delete this surveyor? This cannot be undone.")) return;
+    try {
+      setError(null);
+      setLoadingDeleteId(surveyorId);
+      await AdminApiService.deleteSurveyor(surveyorId);
+      fetchSurveyors();
+      onUpdated();
+    } catch (error: any) {
+      setError(error.message || "Failed to delete surveyor");
+    } finally {
+      setLoadingDeleteId(null);
+    }
+  };
+
+  const openResetPassword = (surveyor: Surveyor) => {
+    setResetPasswordSurveyor(surveyor);
+    setResetPasswordValue("");
+    setResetPasswordError("");
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordSurveyor || resetPasswordValue.length < 6) {
+      setResetPasswordError("Password must be at least 6 characters");
+      return;
+    }
+    try {
+      setResetPasswordLoading(true);
+      setResetPasswordError("");
+      await AdminApiService.resetSurveyorPassword(resetPasswordSurveyor._id, resetPasswordValue);
+      setResetPasswordSurveyor(null);
+      setResetPasswordValue("");
+    } catch (err: any) {
+      setResetPasswordError(err.message || "Failed to reset password");
+    } finally {
+      setResetPasswordLoading(false);
     }
   };
 
@@ -561,9 +625,9 @@ function SurveyorListSection({
                   <div className="min-w-0">
                     <p className="font-medium text-sm truncate">
                       {surveyor.firstName} {surveyor.lastName}
-                      <span className="text-xs text-muted-foreground ml-1 font-normal">({surveyor.username})</span>
+                      <span className={`text-xs ml-1 font-normal ${surveyor.isActive ? "text-muted-foreground" : "text-destructive"}`}>({surveyor.username})</span>
                     </p>
-                    <p className="text-xs text-muted-foreground">{surveyor.mobileNumber}</p>
+                    {/* <p className="text-xs text-muted-foreground">{surveyor.mobileNumber}</p> */}
                     {/* Current villages as small badges */}
                     {surveyor.assignedVillages.length > 0 ? (
                       <div className="flex flex-wrap gap-1 mt-1">
@@ -611,6 +675,28 @@ function SurveyorListSection({
                         <ChevronDown className="size-3" />
                       )}
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openResetPassword(surveyor)}
+                      className="h-6 text-xs px-2"
+                      title="Reset password"
+                    >
+                      <Key className="size-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDelete(surveyor._id)}
+                      disabled={loadingDeleteId === surveyor._id}
+                      className="h-6 text-xs px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      {loadingDeleteId === surveyor._id ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-3" />
+                      )}
+                    </Button>
                   </div>
                 </div>
 
@@ -630,6 +716,47 @@ function SurveyorListSection({
             ))}
           </div>
         )}
+
+        {/* Reset Password Dialog */}
+        <Dialog open={!!resetPasswordSurveyor} onOpenChange={(open) => !open && setResetPasswordSurveyor(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Password</DialogTitle>
+              <DialogDescription>
+                Set a new password for {resetPasswordSurveyor?.firstName} {resetPasswordSurveyor?.lastName} ({resetPasswordSurveyor?.username})
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2 py-2">
+              <Label className="text-xs">New Password</Label>
+              <div className="flex gap-1">
+                <Input
+                  type="text"
+                  placeholder="Min 6 characters"
+                  value={resetPasswordValue}
+                  onChange={(e) => {
+                    setResetPasswordValue(e.target.value);
+                    setResetPasswordError("");
+                  }}
+                  className="flex-1"
+                  disabled={resetPasswordLoading}
+                />
+                <Button variant="outline" size="sm" onClick={generatePassword} disabled={resetPasswordLoading} className="shrink-0">
+                  <Key className="size-4" />
+                </Button>
+              </div>
+              {resetPasswordError && <p className="text-xs text-destructive">{resetPasswordError}</p>}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setResetPasswordSurveyor(null)} disabled={resetPasswordLoading}>
+                Cancel
+              </Button>
+              <Button onClick={handleResetPassword} disabled={resetPasswordLoading || resetPasswordValue.length < 6}>
+                {resetPasswordLoading ? <Loader2 className="size-4 animate-spin" /> : null}
+                Reset Password
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Pagination Controls */}
         {pagination.pages > 1 && (

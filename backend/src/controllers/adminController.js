@@ -55,9 +55,7 @@ exports.getSurveyors = async (req, res) => {
 
         const stats = {
           total: 0,
-          draft: 0,
           submitted: 0,
-          verified: 0
         };
 
         surveyStats.forEach(stat => {
@@ -289,6 +287,27 @@ exports.toggleSurveyorStatus = async (req, res) => {
   }
 };
 
+// Delete surveyor (hard delete)
+exports.deleteSurveyor = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const surveyor = await User.findOne({ _id: id, role: 'surveyor' });
+    if (!surveyor) {
+      return res.status(404).json({ message: 'Surveyor not found' });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    res.json({
+      message: 'Surveyor deleted successfully',
+      deletedId: id
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Get single surveyor with detailed performance
 exports.getSurveyor = async (req, res) => {
   try {
@@ -316,9 +335,7 @@ exports.getSurveyor = async (req, res) => {
 
     const stats = {
       total: 0,
-      draft: 0,
       submitted: 0,
-      verified: 0,
       avgTimeMinutes: 0
     };
 
@@ -420,9 +437,7 @@ exports.getVillages = async (req, res) => {
 
         const stats = {
           total: 0,
-          draft: 0,
           submitted: 0,
-          verified: 0
         };
 
         surveyStats.forEach(stat => {
@@ -676,9 +691,7 @@ exports.getVillage = async (req, res) => {
 
     const stats = {
       total: 0,
-      draft: 0,
       submitted: 0,
-      verified: 0
     };
 
     surveyStats.forEach(stat => {
@@ -851,9 +864,7 @@ exports.getSurveyForReview = async (req, res) => {
 
     const stats = {
       total: 0,
-      draft: 0,
       submitted: 0,
-      verified: 0
     };
 
     surveyorStats.forEach(stat => {
@@ -991,10 +1002,7 @@ exports.getVerificationStats = async (req, res) => {
 
     const stats = {
       total: 0,
-      draft: 0,
       submitted: 0,
-      verified: 0,
-      rejected: 0
     };
 
     overallStats.forEach(stat => {
@@ -1190,10 +1198,7 @@ exports.getDashboardStats = async (req, res) => {
     ]);
 
     const surveyStatus = {
-      draft: 0,
       submitted: 0,
-      verified: 0,
-      rejected: 0
     };
 
     surveyStatusStats.forEach(stat => {

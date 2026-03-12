@@ -123,6 +123,10 @@ export class AdminApiService {
     return api.patch<{ message: string; surveyor: Surveyor }>(`/admin/surveyors/${id}/status`, { isActive });
   }
 
+  static async deleteSurveyor(id: string) {
+    return api.delete<{ message: string; deletedId: string }>(`/admin/surveyors/${id}`);
+  }
+
   static async resetSurveyorPassword(id: string, newPassword?: string) {
     return api.patch<{ message: string }>(`/admin/surveyors/${id}/reset-password`, { newPassword });
   }
