@@ -1059,7 +1059,6 @@ export function SurveyStepper({
                       markTouched('isWhatsApp');
                     }}
                     required
-                    error={getFieldError('isWhatsApp')}
                   />
                   <AgeGenderRow
                     age={age}
