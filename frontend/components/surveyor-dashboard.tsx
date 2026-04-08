@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { SurveyorApiService, type Village, type Survey, type SurveyorStats } from "@/lib/surveyor-api";
-import { LogOut, MapPin, Award, Loader2, FileText, Edit, AlertTriangle, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { LogOut, MapPin, Award, Loader2, FileText, Edit, AlertTriangle, Search, ChevronLeft, ChevronRight, Home } from "lucide-react";
+import { SurveyorProfile } from "@/components/surveyor-profile";
 
 interface SurveyorDashboardProps {
   surveyor: any;
@@ -30,7 +32,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
   const [stats, setStats] = useState<SurveyorStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingSurveys, setIsLoadingSurveys] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showPerformance, setShowPerformance] = useState(false);
 
   // Pagination & Search state
@@ -51,7 +52,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      setError(null);
 
       const [villagesResponse, statsResponse] = await Promise.all([
         SurveyorApiService.getAssignedVillages(),
@@ -61,7 +61,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
       setVillages(villagesResponse);
       setStats(statsResponse);
     } catch (error: any) {
-      setError(error.message || 'Failed to load data');
+      toast.error(error.message || 'Failed to load data');
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +82,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
       setPagination(response.pagination);
     } catch (error: any) {
       console.error('Failed to load surveys:', error);
+      toast.error('Failed to load surveys');
     } finally {
       setIsLoadingSurveys(false);
     }
@@ -114,9 +115,10 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
 
   if (showPerformance && stats) {
     return (
-      <SurveyorPerformance
+      <SurveyorProfile
         stats={stats}
         villages={villages}
+        surveyorName={surveyor.username}
         onBack={() => setShowPerformance(false)}
         onLogout={handleLogout}
       />
@@ -142,7 +144,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => setShowPerformance(true)} className="text-xs h-7 px-2">
               <Award className="size-3.5 mr-1" />
-              Stats
+              Profile
             </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout} className="text-xs h-7 px-2">
               <LogOut className="size-3.5 mr-1" />
@@ -151,13 +153,8 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
           </div>
         </header>
 
-        {error && (
-          <div className="mx-4 mt-4 p-3 rounded-lg border border-destructive/50 bg-destructive/10">
-            <p className="text-sm text-destructive">{error}</p>
-          </div>
-        )}
 
-        {villages.length === 0 && !error && (
+        {villages.length === 0 && (
           <div className="mx-4 mt-4 p-4 rounded-lg border border-muted bg-muted/30">
             <p className="text-sm text-muted-foreground text-center">
               No villages assigned yet. Please contact your admin to assign villages to your account.
@@ -196,22 +193,38 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
 
           {/* Overview Cards */}
           <div className="grid grid-cols-2 gap-3">
-            <Card>
-              <CardContent className="pt-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{villages.length}</div>
-                  <p className="text-xs text-muted-foreground">Assigned Villages</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{stats?.overview.totalSurveys || 0}</div>
-                  <p className="text-xs text-muted-foreground">Total Surveys</p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Assigned Villages */}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => setShowPerformance(true)}
+              onKeyDown={(e) => e.key === "Enter" && setShowPerformance(true)}
+              className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white">
+                <Home className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold leading-none">{villages.length}</div>
+                <p className="mt-1 text-xs text-muted-foreground">Assigned Villages</p>
+              </div>
+            </div>
+            {/* Total Surveys */}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => setShowPerformance(true)}
+              onKeyDown={(e) => e.key === "Enter" && setShowPerformance(true)}
+              className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white">
+                <FileText className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold leading-none">{stats?.overview.totalSurveys || 0}</div>
+                <p className="mt-1 text-xs text-muted-foreground">Total Surveys</p>
+              </div>
+            </div>
           </div>
 
           {/* Village List */}
@@ -237,7 +250,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
                       </p>
                     </div>
                     <Badge variant="secondary">
-                      {village.surveyStats?.verifiedSurveys || 0} verified
+                      {village.surveyStats?.totalSurveys || 0} surveys
                     </Badge>
                   </div>
                 </div>
@@ -262,7 +275,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setShowPerformance(true)} className="text-xs h-7 px-2">
             <Award className="size-3.5 mr-1" />
-            Stats
+            Profile
           </Button>
           <Button variant="ghost" size="sm" onClick={handleLogout} className="text-xs h-7 px-2">
             <LogOut className="size-3.5 mr-1" />
@@ -437,112 +450,3 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
   );
 }
 
-// Performance View Component
-function SurveyorPerformance({
-  stats,
-  villages,
-  onBack,
-  onLogout
-}: {
-  stats: SurveyorStats;
-  villages: Village[];
-  onBack: () => void;
-  onLogout: () => void;
-}) {
-  return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Award className="h-4 w-4" />
-          <h1 className="text-base font-semibold text-foreground">Performance Stats</h1>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={onBack} className="text-xs h-7 px-2">
-            ← Back
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onLogout} className="text-xs h-7 px-2">
-            <LogOut className="size-3.5 mr-1" />
-            Logout
-          </Button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-lg p-4 flex flex-col gap-4">
-        {/* Overview Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{stats.overview.totalSurveys}</div>
-                <p className="text-xs text-muted-foreground">Total Surveys</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{stats.overview.verificationRate}%</div>
-                <p className="text-xs text-muted-foreground">Verification Rate</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Status Breakdown */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Survey Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Draft</span>
-              <Badge variant="outline">{stats.overview.draftSurveys}</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Submitted</span>
-              <Badge variant="secondary">{stats.overview.submittedSurveys}</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Verified</span>
-              <Badge variant="default">{stats.overview.verifiedSurveys}</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Rejected</span>
-              <Badge variant="destructive">{stats.overview.rejectedSurveys}</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Village Performance */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              Village Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {stats.villageStats.map((villageStat) => {
-              const village = villages.find(v => v.name === villageStat._id);
-              return (
-                <div key={villageStat._id} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{villageStat._id}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {villageStat.total} total surveys
-                      </p>
-                    </div>
-                    <Badge variant="secondary">
-                      {villageStat.verified} verified
-                    </Badge>
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      </main>
-    </div>
-  );
-}
