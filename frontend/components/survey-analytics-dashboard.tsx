@@ -31,7 +31,7 @@ const HEALTH_CATS = ["Diabetes", "Hypertension", "Heart Disease", "Asthma", "Tub
 const EDU_LEVELS = ["Not Enrolled", "Anganwadi", "Primary", "Secondary", "Higher Secondary", "ITI/Diploma", "College", "Dropout"];
 // Must match educationChildren.educationalIssues enum in HouseholdSurvey.js exactly
 const EDU_PROBLEMS = ["Financial problem", "Transportation issue", "Poor academic performance", "Dropped out", "Lack of digital access", "Lack of books/material", "Health issue", "Family responsibility", "Other"];
-const SKILLS_LIST = ["Farming", "Mason", "Plumbing", "Electrician", "Driving", "Computer skills", "Mobile repair", "Handicrafts", "Cooking", "Hardware", "Sutar (Carpenter)", "Lohar (Blacksmith)", "Kumbhar (Potter)", "Nhavi (Barber)", "Parit (Washerman)", "Other"];
+const SKILLS_LIST = ["Farming", "Mason", "Plumbing", "Electrician", "Driving", "Computer skills", "Mobile repair", "Handicrafts", "Cooking", "Hardware", "Other"];
 const UNEMP_REASONS = ["No skills", "Low education", "Health issue", "No job opportunities", "Financial problems", "Family responsibilities", "Migration issue", "Other"];
 // Morbidity sub-conditions from hasAdditionalMorbidity enum in HouseholdSurvey.js
 const MORBIDITY_CATS = ["Knee Pain", "Back Pain", "Leg Pain", "Joint Pain", "Paralysis", "Other"];
