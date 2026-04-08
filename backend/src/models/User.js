@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
   },
   assignedVillages: [{ type: String }],
   isActive: { type: Boolean, default: true },
+  lastLogin: { type: Date },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

@@ -205,20 +205,18 @@ function SurveysPanel({
               ID: {s._id.slice(-6).toUpperCase()}
             </p>
           </div>
-          <Badge
-            className="h-5 text-[10px] px-1.5 shrink-0"
-            variant={
-              s.status === "Verified"
-                ? "default"
-                : s.status === "Submitted"
-                ? "secondary"
-                : s.status === "Rejected"
-                ? "destructive"
-                : "outline"
-            }
-          >
-            {s.status}
-          </Badge>
+          {s.status !== "Verified" && s.status !== "Submitted" && (
+            <Badge
+              className="h-5 text-[10px] px-1.5 shrink-0"
+              variant={
+                s.status === "Rejected"
+                  ? "destructive"
+                  : "outline"
+              }
+            >
+              {s.status}
+            </Badge>
+          )}
         </div>
       ))}
     </div>
