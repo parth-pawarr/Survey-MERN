@@ -15,8 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { SurveyorApiService, type Village, type Survey, type SurveyorStats } from "@/lib/surveyor-api";
-import { LogOut, MapPin, Award, Loader2, FileText, Edit, AlertTriangle, Search, ChevronLeft, ChevronRight, Home } from "lucide-react";
+import { LogOut, MapPin, Award, Loader2, FileText, Edit, Eye, Search, ChevronLeft, ChevronRight, Home } from "lucide-react";
 import { SurveyorProfile } from "@/components/surveyor-profile";
+import { SurveyDetailModal } from "@/components/survey-detail-modal";
 
 interface SurveyorDashboardProps {
   surveyor: any;
@@ -33,6 +34,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingSurveys, setIsLoadingSurveys] = useState(false);
   const [showPerformance, setShowPerformance] = useState(false);
+  const [viewSurveyId, setViewSurveyId] = useState<string | null>(null);
 
   // Pagination & Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -372,9 +374,18 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
                         </Badge>
                       </div>
 
-                      {/* Action Buttons — Update available for Draft / Submitted / Rejected */}
-                      {survey.status !== 'Verified' && (
-                        <div className="flex gap-2 mt-2">
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setViewSurveyId(survey._id)}
+                          className="flex-1 gap-1 h-7 text-xs"
+                        >
+                          <Eye className="size-3" />
+                          View
+                        </Button>
+                        {survey.status !== 'Verified' && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -384,8 +395,8 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
                             <Edit className="size-3" />
                             Update
                           </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -446,6 +457,14 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
           </CardContent>
         </Card>
       </main>
+
+      {/* Survey Detail Modal */}
+      {viewSurveyId && (
+        <SurveyDetailModal
+          surveyId={viewSurveyId}
+          onClose={() => setViewSurveyId(null)}
+        />
+      )}
     </div>
   );
 }
