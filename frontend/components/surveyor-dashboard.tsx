@@ -203,7 +203,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
               onKeyDown={(e) => e.key === "Enter" && setShowPerformance(true)}
               className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
                 <Home className="h-4 w-4" />
               </div>
               <div>
@@ -219,7 +219,7 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
               onKeyDown={(e) => e.key === "Enter" && setShowPerformance(true)}
               className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
                 <FileText className="h-4 w-4" />
               </div>
               <div>
@@ -228,6 +228,8 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
               </div>
             </div>
           </div>
+
+        
 
           {/* Village List */}
           <Card>

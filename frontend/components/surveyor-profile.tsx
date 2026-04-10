@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CheckCircle2 } from "lucide-react";
 import {
   LogOut,
   MapPin,
@@ -107,7 +108,7 @@ function StatCard({
       style={{ minHeight: "110px" }}
     >
       <div
-        className={`flex h-9 w-9 items-center justify-center rounded-xl ${color} text-white`}
+        className={`flex h-9 w-9 items-center justify-center rounded-xl ${color}`}
       >
         {icon}
       </div>
@@ -443,36 +444,72 @@ export function SurveyorProfile({
         </div>
 
         {/* ── Achievements ── */}
-        <section>
-          <h2 className="mb-2 text-sm font-semibold text-foreground">
-            Achievements
-          </h2>
-          <Card className="py-2.5">
-            <CardContent className="py-0 px-3">
-              <div className="w-full sm:max-w-[28rem]">
-                <div className="flex gap-2 overflow-x-auto pb-1 pr-1 scrollbar-none">
-                {badges.map((badge) => (
-                  <div
-                    key={badge.label}
-                    className={`flex h-7 min-w-[6.25rem] flex-none items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-medium whitespace-nowrap transition-colors ${
-                      badge.unlocked
-                        ? "bg-muted/40 text-foreground border-border"
-                        : "bg-muted/20 text-muted-foreground border-border/60"
-                    }`}
-                    title={badge.unlocked ? "Unlocked" : `Unlocks at ${badge.requiredSurveys} surveys`}
-                    aria-label={`${badge.label} badge ${badge.unlocked ? "unlocked" : "locked"}`}
-                  >
-                    <span className={`text-sm leading-none ${badge.unlocked ? "opacity-100" : "opacity-50"}`}>
-                      {badge.emoji}
-                    </span>
-                    {badge.label}
+         {/* Achievements Section */}
+          <section className="space-y-4 py-4 px-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Achievements</h2>
+              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {stats?.overview.totalSurveys || 0} Surveys
+              </span>
+            </div>
+            
+            <div className="relative flex justify-between items-start px-4">
+              {/* Progress Track Background */}
+              <div className="absolute top-5 left-10 right-10 h-[2px] bg-muted -z-0" />
+              
+              {/* Active Progress Track */}
+              {(() => {
+                const total = stats?.overview.totalSurveys || 0;
+                const progress = total >= 100 ? 100 : total < 10 ? (total/10)*0 : total < 50 ? 0 + ((total-10)/40)*50 : 50 + ((total-50)/50)*50;
+                // Simplified progress for visual
+                const visualProgress = Math.min(100, (total / 100) * 100);
+                return (
+                  <div 
+                    className="absolute top-5 left-10 h-[2px] bg-primary transition-all duration-1000 -z-0" 
+                    style={{ width: `calc(${visualProgress}% - ${visualProgress > 0 ? '20px' : '0px'})`, maxWidth: 'calc(100% - 80px)' }}
+                  />
+                );
+              })()}
+
+              {[
+                { label: "Starter", threshold: 10, emoji: "🥉" },
+                { label: "Field Worker", threshold: 50, emoji: "🥈" },
+                { label: "Survey Champion", threshold: 100, emoji: "🥇" }
+              ].map((m) => {
+                const total = stats?.overview.totalSurveys || 0;
+                const isUnlocked = total >= m.threshold;
+                
+                return (
+                  <div key={m.label} className="relative z-10 flex flex-col items-center gap-2 group">
+                    <div 
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all duration-500 shadow-sm ${
+                        isUnlocked 
+                        ? "bg-white border-2 border-primary scale-110 active:scale-125" 
+                        : "bg-muted border border-transparent grayscale opacity-70 scale-100"
+                      }`}
+                      title={`${m.label} (${m.threshold} surveys)`}
+                    >
+                      {m.emoji}
+                      {isUnlocked && (
+                        <div className="absolute -top-1 -right-1 bg-primary text-white rounded-full p-0.5 shadow-md animate-in fade-in zoom-in duration-300">
+                          <CheckCircle2 className="h-2.5 w-2.5" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col items-center text-center max-w-[60px]">
+                      <span className={`text-[9px] font-bold leading-tight transition-colors ${isUnlocked ? "text-foreground" : "text-muted-foreground"}`}>
+                        {m.label}
+                      </span>
+                      <span className="text-[8px] text-muted-foreground/60 font-mono">
+                         {m.threshold}
+                      </span>
+                    </div>
                   </div>
-                ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+                );
+              })}
+            </div>
+          </section>
 
         {/* ── Performance Stat Cards ── */}
         <section>
@@ -482,7 +519,7 @@ export function SurveyorProfile({
               icon={<Home className="h-4 w-4" />}
               value={villages.length}
               label="Assigned Villages"
-              color="bg-blue-500"
+              color="bg-slate-100 text-slate-600"
               active={activeView === "villages"}
               onClick={() => handleCardClick("villages")}
             />
@@ -490,7 +527,7 @@ export function SurveyorProfile({
               icon={<FileText className="h-4 w-4" />}
               value={stats.overview.totalSurveys}
               label="Total Surveys"
-              color="bg-violet-500"
+              color="bg-slate-100 text-slate-600"
               active={activeView === "all-surveys"}
               onClick={() => handleCardClick("all-surveys")}
             />
@@ -498,7 +535,7 @@ export function SurveyorProfile({
               icon={<CalendarDays className="h-4 w-4" />}
               value={todayCount}
               label="Today's Surveys"
-              color="bg-emerald-500"
+              color="bg-slate-100 text-slate-600"
               active={activeView === "today-surveys"}
               onClick={() => handleCardClick("today-surveys")}
             />
