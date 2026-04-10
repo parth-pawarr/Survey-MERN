@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -463,6 +463,7 @@ function SurveyorListSection({
     pages: 1,
     limit: 10
   });
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [loadingToggleId, setLoadingToggleId] = useState<string | null>(null);
@@ -505,8 +506,19 @@ function SurveyorListSection({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     setCurrentPage(1);
     setSearchQuery(searchInput);
+  };
+
+  // Real-time debounced search — fires 400 ms after the user stops typing
+  const handleSearchInputChange = (value: string) => {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setCurrentPage(1);
+      setSearchQuery(value);
+    }, 400);
   };
 
   const toggleStatus = async (surveyorId: string, currentStatus: boolean) => {
@@ -573,10 +585,10 @@ function SurveyorListSection({
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search by username or mobile..."
+                placeholder="Search by name, village, mobile..."
                 className="pl-8 h-9 text-xs"
                 value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
               />
             </div>
             <Button type="submit" size="sm" className="h-9 px-3 text-xs">

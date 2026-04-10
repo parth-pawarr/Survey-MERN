@@ -25,7 +25,10 @@ exports.getSurveyors = async (req, res) => {
       const searchRegex = new RegExp(req.query.search, 'i');
       filter.$or = [
         { username: searchRegex },
-        { mobileNumber: searchRegex }
+        { mobileNumber: searchRegex },
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { assignedVillages: { $elemMatch: { $regex: req.query.search, $options: 'i' } } }
       ];
     }
 
