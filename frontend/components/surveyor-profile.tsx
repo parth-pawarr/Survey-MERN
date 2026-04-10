@@ -100,23 +100,23 @@ function StatCard({
       onClick={onClick}
       onKeyDown={onClick ? (e) => e.key === "Enter" && onClick() : undefined}
       className={`
-        relative flex flex-col gap-3 rounded-2xl border bg-card p-4
+        relative flex flex-col gap-2 sm:gap-3 rounded-2xl border bg-card p-2.5 sm:p-4
         shadow-sm transition-all duration-200
         ${onClick ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]" : ""}
         ${active ? "ring-2 ring-primary ring-offset-1" : ""}
       `}
-      style={{ minHeight: "110px" }}
+      style={{ minHeight: "90px" }}
     >
       <div
-        className={`flex h-9 w-9 items-center justify-center rounded-xl ${color}`}
+        className={`flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-xl ${color}`}
       >
         {icon}
       </div>
       <div>
-        <div className="text-3xl font-bold leading-none tracking-tight text-foreground">
+        <div className="text-xl sm:text-3xl font-bold leading-none tracking-tight text-foreground">
           {value}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+        <p className="mt-1 text-[10px] sm:text-xs text-muted-foreground line-clamp-1">{label}</p>
       </div>
       {onClick && (
         <ChevronRight
@@ -514,7 +514,7 @@ export function SurveyorProfile({
         {/* ── Performance Stat Cards ── */}
         <section>
           <h2 className="mb-3 text-sm font-semibold text-foreground">Performance</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             <StatCard
               icon={<Home className="h-4 w-4" />}
               value={villages.length}
