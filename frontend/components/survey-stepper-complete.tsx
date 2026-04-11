@@ -954,9 +954,6 @@ export function SurveyStepper({
             <ChevronLeft className="size-3.5 mr-1" />
             {step > 1 ? "Back" : "Cancel"}
           </Button>
-          <div className="text-sm font-medium text-foreground">
-            {mode === 'update' ? 'Update Survey' : 'New Survey'} — Step {step} of 4
-          </div>
         </div>
         <div className="text-xs text-muted-foreground">{village}</div>
       </header>
@@ -1218,12 +1215,6 @@ export function SurveyStepper({
                                 />
                               </>
                             )}
-                            {/* <CompactRadioGroup
-                              label="Has Ayushman Card?"
-                              value={healthMembers[healthIdx]?.hasAyushman || ""}
-                              onChange={(v) => updateHealthMember(healthIdx, "hasAyushman", v)}
-                              options={["Yes", "No"]}
-                            /> */}
                             {/* Health Issues Selection */}
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
@@ -1237,7 +1228,7 @@ export function SurveyStepper({
                                       updateHealthMember(healthIdx, "healthIssue", updated);
                                     }
                                   }}
-                                  className="border rounded p-1 text-xs"
+                                  className="border rounded p-1 text-xs w-27"
                                 >
                                   <option value="">+ Add Issue</option>
                                   {HEALTH_ISSUES.map((issue) => (
@@ -1292,7 +1283,7 @@ export function SurveyStepper({
                                       updateHealthMember(healthIdx, "morbidity", updated);
                                     }
                                   }}
-                                  className="border rounded p-1 text-xs"
+                                  className="border rounded p-1 text-xs w-27"
                                 >
                                   <option value="">+ Add Problem</option>
                                   {MORBIDITY_OPTIONS.map((morbidity) => (

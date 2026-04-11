@@ -165,35 +165,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
         )}
 
         <main className="mx-auto max-w-lg p-4 flex flex-col gap-4">
-          {/* <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Select Village
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <Select value={selectedVillage} onValueChange={setSelectedVillage}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a village to start survey" />
-                </SelectTrigger>
-                <SelectContent>
-                  {villages.map((village, index) => (
-                    <SelectItem key={`${village._id}-${index}`} value={village.name}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{village.name}</span>
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {village.surveyStats?.totalSurveys || 0} surveys
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card> */}
-
-          {/* Overview Cards */}
           <div className="grid grid-cols-2 gap-3">
             {/* Assigned Villages */}
             <div
@@ -249,9 +220,6 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-sm">{village.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {village.surveyStats?.totalSurveys || 0} surveys completed
-                      </p>
                     </div>
                     <Badge variant="secondary">
                       {village.surveyStats?.totalSurveys || 0} surveys
@@ -351,29 +319,19 @@ export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: Surveyo
                 <div className="flex flex-col gap-2">
                   {surveys.map((survey) => (
                     <div key={survey._id} className="border rounded-lg p-3 hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-medium text-sm">{survey.representativeName}</p>
-                          <p className="text-xs text-muted-foreground">{survey.mobileNumber}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">
-                              ID: {survey._id.slice(-6).toUpperCase()}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {survey.totalFamilyMembers} members
-                            </span>
-                          </div>
+                      <div className="flex flex-col gap-2 mb-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-medium text-sm truncate">{survey.representativeName}</p>
+                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono whitespace-nowrap">
+                            ID: {survey._id.slice(-6).toUpperCase()}
+                          </span>
                         </div>
-                        <Badge
-                          className="h-5 text-[10px] px-1.5"
-                          variant={
-                            survey.status === 'Verified' ? 'default' :
-                              survey.status === 'Submitted' ? 'secondary' :
-                                survey.status === 'Rejected' ? 'destructive' : 'outline'
-                          }
-                        >
-                          {survey.status}
-                        </Badge>
+                        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                          <span className="truncate">({survey.mobileNumber})</span>
+                          <span className="whitespace-nowrap">
+                            {survey.totalFamilyMembers} members
+                          </span>
+                        </div>
                       </div>
 
                       {/* Action Buttons */}
