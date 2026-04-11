@@ -1449,30 +1449,60 @@ export function SurveyStepper({
                               required
                               error={getFieldError(`e-level-${eduIdx}`)}
                             />
-                            <CompactCheckboxGroup
-                              label="Type of Educational Issue"
-                              selected={eduMembers[eduIdx]?.educationalIssues || []}
-                              onChange={(v) => {
-                                updateEduMember(eduIdx, "educationalIssues", v);
-                                // clear other text if "Other" is deselected
-                                if (!v.includes('Other')) {
-                                  updateEduMember(eduIdx, "educationalIssuesOther" as any, "");
-                                }
-                              }}
-                              options={EDUCATION_ISSUES}
-                            />
-                            {/* "Other" educational issue text input */}
-                            {eduMembers[eduIdx]?.educationalIssues?.includes('Other') && (
-                              <CompactInput
-                                label="Please specify educational issue"
-                                id={`e-eduIssueOther-${eduIdx}`}
-                                value={(eduMembers[eduIdx] as any)?.educationalIssuesOther || ""}
-                                onChange={(v) => updateEduMember(eduIdx, "educationalIssuesOther" as any, v)}
-                                placeholder="Describe the issue"
-                                required
-                                error={getFieldError(`e-eduIssueOther-${eduIdx}`)}
-                              />
-                            )}
+                            {/* Educational Issues Selection */}
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center justify-between">
+                                <label className="text-xs font-medium">Type of Educational Issue</label>
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val && !eduMembers[eduIdx]?.educationalIssues.includes(val)) {
+                                      const updated = [...(eduMembers[eduIdx]?.educationalIssues || []), val];
+                                      updateEduMember(eduIdx, "educationalIssues", updated);
+                                    }
+                                  }}
+                                  className="border rounded p-1 text-xs w-23"
+                                >
+                                  <option value="">+ Add Issue</option>
+                                  {EDUCATION_ISSUES.map((issue) => (
+                                    <option key={issue} value={issue}>
+                                      {issue}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {eduMembers[eduIdx]?.educationalIssues?.map((issue) => (
+                                  <div key={issue} className="flex items-center gap-1 bg-primary/10 rounded px-2 py-1">
+                                    <span className="text-xs">{issue}</span>
+                                    <button
+                                      onClick={() => {
+                                        const updated = eduMembers[eduIdx]?.educationalIssues.filter((i) => i !== issue) || [];
+                                        updateEduMember(eduIdx, "educationalIssues", updated);
+                                        // clear otherValue if "Other" removed
+                                        if (issue === 'Other') updateEduMember(eduIdx, "educationalIssuesOther" as any, "");
+                                      }}
+                                      className="text-xs text-destructive hover:font-bold"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                              {/* "Other" educational issue text input */}
+                              {eduMembers[eduIdx]?.educationalIssues?.includes('Other') && (
+                                <CompactInput
+                                  label="Please specify educational issue"
+                                  id={`e-eduIssueOther-${eduIdx}`}
+                                  value={(eduMembers[eduIdx] as any)?.educationalIssuesOther || ""}
+                                  onChange={(v) => updateEduMember(eduIdx, "educationalIssuesOther" as any, v)}
+                                  placeholder="Describe the issue"
+                                  required
+                                  error={getFieldError(`e-eduIssueOther-${eduIdx}`)}
+                                />
+                              )}
+                            </div>
                           </motion.div>
                         </AnimatePresence>
                       </div>
@@ -1601,30 +1631,60 @@ export function SurveyStepper({
                               required
                               error={getFieldError(`u-edu-${unempIdx}`)}
                             />
-                            <CompactCheckboxGroup
-                              label="Skills Known"
-                              selected={unempMembers[unempIdx]?.skills || []}
-                              onChange={(v) => {
-                                updateUnempMember(unempIdx, "skills", v);
-                                // clear other text if "Other" is deselected
-                                if (!v.includes('Other')) {
-                                  updateUnempMember(unempIdx, "skillOther", "");
-                                }
-                              }}
-                              options={SKILLS}
-                            />
-                            {/* "Other" skill text input */}
-                            {unempMembers[unempIdx]?.skills?.includes('Other') && (
-                              <CompactInput
-                                label="Please specify skill"
-                                id={`u-skillOther-${unempIdx}`}
-                                value={unempMembers[unempIdx]?.skillOther || ""}
-                                onChange={(v) => updateUnempMember(unempIdx, "skillOther", v)}
-                                placeholder="Describe the skill"
-                                required
-                                error={getFieldError(`u-skillOther-${unempIdx}`)}
-                              />
-                            )}
+                            {/* Skills Known Selection */}
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center justify-between">
+                                <label className="text-xs font-medium">Skills Known</label>
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val && !unempMembers[unempIdx]?.skills.includes(val)) {
+                                      const updated = [...(unempMembers[unempIdx]?.skills || []), val];
+                                      updateUnempMember(unempIdx, "skills", updated);
+                                    }
+                                  }}
+                                  className="border rounded p-1 text-xs w-27"
+                                >
+                                  <option value="">+ Add Skill</option>
+                                  {SKILLS.map((skill) => (
+                                    <option key={skill} value={skill}>
+                                      {skill}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {unempMembers[unempIdx]?.skills?.map((skill) => (
+                                  <div key={skill} className="flex items-center gap-1 bg-primary/10 rounded px-2 py-1">
+                                    <span className="text-xs">{skill}</span>
+                                    <button
+                                      onClick={() => {
+                                        const updated = unempMembers[unempIdx]?.skills.filter((s) => s !== skill) || [];
+                                        updateUnempMember(unempIdx, "skills", updated);
+                                        // clear otherValue if "Other" removed
+                                        if (skill === 'Other') updateUnempMember(unempIdx, "skillOther", "");
+                                      }}
+                                      className="text-xs text-destructive hover:font-bold"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                              {/* "Other" skill text input */}
+                              {unempMembers[unempIdx]?.skills?.includes('Other') && (
+                                <CompactInput
+                                  label="Please specify skill"
+                                  id={`u-skillOther-${unempIdx}`}
+                                  value={unempMembers[unempIdx]?.skillOther || ""}
+                                  onChange={(v) => updateUnempMember(unempIdx, "skillOther", v)}
+                                  placeholder="Describe the skill"
+                                  required
+                                  error={getFieldError(`u-skillOther-${unempIdx}`)}
+                                />
+                              )}
+                            </div>
                             {unempMembers[unempIdx]?.employmentStatus === "Unemployed" && (
                               <>
                                 <CompactDropdown

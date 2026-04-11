@@ -101,18 +101,18 @@ export const EDUCATION_LEVELS = [
   "Secondary",
   "Higher Secondary",
   "ITI / Diploma",
-  "College",
+  "Graduate",
+  "Postgraduate",
   "Dropout",
 ];
 
 export const EDUCATION_ISSUES = [
-  "Financial problem",
-  "Transportation issue",
-  "Poor academic performance",
+  "Financial",
+  "Transportation",
+  "Academic performance",
   "Dropped out",
-  "Lack of digital access",
-  "Lack of books/material",
-  "Health issue",
+  "Digital access",
+  "Health",
   "Family responsibility",
   "Other",
 ];
@@ -120,8 +120,9 @@ export const EDUCATION_ISSUES = [
 export const UNEMPLOYMENT_EDUCATION = [
   "Illiterate",
   "Primary",
-  "10th Pass",
-  "12th Pass",
+  "Secondary",
+  "Higher Secondary",
+  "ITI / Diploma",
   "Graduate",
   "Postgraduate",
 ];
