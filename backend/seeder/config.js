@@ -28,7 +28,7 @@ const UNEMPLOYMENT_REASONS = [
 
 const EMPLOYMENT_STATUS = ['Unemployed', 'Suboptimally Employed'];
 
-const HIGHEST_EDUCATION = ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Graduate', 'Postgraduate'];
+const HIGHEST_EDUCATION = ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Higher Secondary', 'ITI / Diploma', 'Graduate', 'Postgraduate'];
 
 const EDUCATIONAL_ISSUES = [
   'Financial problem', 'Transportation issue', 'Poor academic performance',
@@ -51,42 +51,42 @@ const VILLAGES = [
 // ─── INDIAN NAMES ──────────────────────────────────────────────────────────────
 
 const MALE_FIRST_NAMES = [
-  'Arjun', 'Rohit', 'Vikas', 'Santosh', 'Mahesh', 'Suresh', 'Ramesh',
-  'Ganesh', 'Dinesh', 'Rakesh', 'Naresh', 'Umesh', 'Rajesh', 'Yogesh',
-  'Nilesh', 'Prashant', 'Sanjay', 'Vijay', 'Ajay', 'Rajan', 'Prakash',
-  'Ashok', 'Deepak', 'Manoj', 'Anil', 'Sunil', 'Kapil', 'Sachin',
-  'Kiran', 'Pankaj', 'Amol', 'Vishal', 'Nikhil', 'Akash', 'Abhijit',
-  'Sandesh', 'Prasad', 'Omkar', 'Shubham', 'Pratik', 'Rahul', 'Amit',
-  'Sumit', 'Kunal', 'Pranav', 'Yash', 'Atharva', 'Tejas', 'Rushikesh',
-  'Mangesh', 'Dattatray', 'Balaji', 'Vitthal', 'Pandurang', 'Maruti',
-  'Ramshankar', 'Laxman', 'Bhagwan', 'Haribhau', 'Yadav', 'Kishor',
+  'Aditya', 'Kartik', 'Rohan', 'Sameer', 'Harsh', 'Lokesh', 'Tarun',
+  'Devendra', 'Nitin', 'Varun', 'Manish', 'Hitesh', 'Gaurav', 'Anup',
+  'Siddharth', 'Chirag', 'Arvind', 'Kamal', 'Naveen', 'Sandeep', 'Rituraj',
+  'Hemant', 'Jitendra', 'Ravindra', 'Mukesh', 'Dilip', 'Anand', 'Mayur',
+  'Shailesh', 'Tushar', 'Chetan', 'Darshan', 'Harshal', 'Sagar', 'Bhavesh',
+  'Kedar', 'Rohidas', 'Milind', 'Swapnil', 'Nandu', 'Pravin', 'Hemraj',
+  'Suyash', 'Ritesh', 'Niraj', 'Shantanu', 'Adarsh', 'Tanmay', 'Viren',
+  'Mahavir', 'Shrikant', 'Eknath', 'Baban', 'Gajanan', 'Hanuman',
+  'Ramdas', 'Shivram', 'Keshav', 'Bapurao', 'Namdeo', 'Shivaji',
   // Muslim names
-  'Arshad', 'Imran', 'Salim', 'Farhan', 'Riyaz', 'Sabir', 'Wasim',
-  'Irfan', 'Javed', 'Karim', 'Nazim', 'Shakil', 'Tariq', 'Altaf',
+  'Faizan', 'Aamir', 'Sohail', 'Armaan', 'Zubair', 'Nadeem', 'Aslam',
+  'Yusuf', 'Samee', 'Parvez', 'Haris', 'Rashid', 'Nawaz', 'Firoz',
 ];
 
 const FEMALE_FIRST_NAMES = [
-  'Sunita', 'Anita', 'Kavita', 'Savita', 'Rekha', 'Meena', 'Seema',
-  'Geeta', 'Lata', 'Mala', 'Asha', 'Usha', 'Nanda', 'Vanda',
-  'Priya', 'Pooja', 'Sneha', 'Neha', 'Nisha', 'Swati', 'Pallavi',
-  'Madhuri', 'Reshma', 'Varsha', 'Sarita', 'Manisha', 'Amruta',
-  'Pratiksha', 'Ashwini', 'Gauri', 'Shraddha', 'Rutuja', 'Tejal',
-  'Deepika', 'Archana', 'Vandana', 'Nirmala', 'Sushila', 'Leela',
-  'Champa', 'Padma', 'Kamal', 'Shobha', 'Vimala', 'Tara', 'Parvati',
+  'Ranjana', 'Kalpana', 'Sangeeta', 'Babita', 'Shanta', 'Kamini', 'Indu',
+  'Jyoti', 'Sarla', 'Pushpa', 'Veena', 'Rajni', 'Kusum', 'Shaila',
+  'Komal', 'Divya', 'Isha', 'Riya', 'Tanuja', 'Kiranmayi', 'Bhavana',
+  'Sonali', 'Rachana', 'Purnima', 'Sheetal', 'Alka', 'Vaishali',
+  'Monika', 'Dipali', 'Ketaki', 'Mrinal', 'Namrata', 'Rashmi',
+  'Priti', 'Shilpa', 'Anuradha', 'Uma', 'Savitri', 'Indira',
+  'Ganga', 'Tulsi', 'Kamala', 'Laxmi', 'Durga', 'Sita', 'Radha',
   // Muslim names
-  'Fatima', 'Ayesha', 'Zainab', 'Rehana', 'Shabana', 'Nasreen', 'Rubina',
+  'Saba', 'Hina', 'Nazia', 'Farida', 'Rukhsar', 'Shazia', 'Parveen',
 ];
 
 const SURNAMES = [
-  'Patil', 'Shinde', 'Jadhav', 'Pawar', 'More', 'Gaikwad', 'Bhosale',
-  'Deshmukh', 'Kulkarni', 'Deshpande', 'Joshi', 'Patel', 'Shah',
-  'Yadav', 'Sharma', 'Verma', 'Gupta', 'Singh', 'Thakur', 'Chauhan',
-  'Nair', 'Pillai', 'Iyer', 'Menon', 'Naik', 'Sawant', 'Bagul',
-  'Ahire', 'Borse', 'Chavan', 'Dange', 'Gavhane', 'Ingale', 'Kale',
-  'Lokhande', 'Mane', 'Nikam', 'Pagar', 'Raut', 'Salve', 'Thokal',
-  'Wagh', 'Zope', 'Gavit', 'Sonawane', 'Bhandare', 'Suryawanshi',
+  'Chaudhari', 'Kadam', 'Ghorpade', 'Thorve', 'Kshirsagar', 'Mohite', 'Nalawade',
+  'Karande', 'Pingle', 'Kanade', 'Bhave', 'Apte', 'Gokhale', 'Mehta',
+  'Agarwal', 'Bajaj', 'Malhotra', 'Kapoor', 'Saxena', 'Tiwari',
+  'Shetty', 'Reddy', 'Varma', 'Krishnan', 'Acharya', 'Desai', 'Kamat',
+  'Hegde', 'Prabhu', 'Shelar', 'Kharat', 'Mhatre', 'Pathare', 'Pise',
+  'Gite', 'Bhagat', 'Jagtap', 'Dhoble', 'Kendre', 'Wankhede',
+  'Gosavi', 'Pardeshi', 'Chopade', 'Bhalerao', 'Ranshe', 'Ghadge',
   // Muslim surnames
-  'Khan', 'Shaikh', 'Qureshi', 'Ansari', 'Siddiqui', 'Pathan',
+  'Mirza', 'Baig', 'Kazi', 'Momin', 'Attar', 'Multani',
 ];
 
 // ─── WEIGHTED DISTRIBUTION TABLES ─────────────────────────────────────────────

@@ -38,7 +38,7 @@ const UnemployedMemberSchema = new mongoose.Schema({
   highestEducation: {
     type: String,
     required: true, 
-    enum: ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Graduate', 'Postgraduate'] 
+    enum: ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Higher Secondary', 'ITI / Diploma', 'Graduate', 'Postgraduate'] 
   },
   skillsKnown: [{ type: String, enum: skills }],
   otherSkills: String,
