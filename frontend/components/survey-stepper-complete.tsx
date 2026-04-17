@@ -1145,11 +1145,6 @@ export function SurveyStepper({
                   />
                   {hasHealthIssue === "Yes" && healthMembers.length > 0 && (
                     <div className="flex flex-col gap-3">
-                      <MemberCarouselNav
-                        total={healthMembers.length}
-                        activeIdx={healthIdx}
-                        onSelect={setHealthIdx}
-                      />
                       <div
                         className="overflow-hidden"
                         {...makeSwipeHandlers(healthTouchX, healthIdx, healthMembers.length, setHealthIdx, setHealthDir)}
@@ -1334,6 +1329,11 @@ export function SurveyStepper({
                         </AnimatePresence>
                       </div>
                       {!canAddMember && <MemberLimitWarning />}
+                      <MemberCarouselNav
+                        total={healthMembers.length}
+                        activeIdx={healthIdx}
+                        onSelect={setHealthIdx}
+                      />
                       <Button
                         variant="outline"
                         size="sm"
@@ -1370,11 +1370,6 @@ export function SurveyStepper({
                   />
                   {hasEduIssue === "Yes" && eduMembers.length > 0 && (
                     <div className="flex flex-col gap-3">
-                      <MemberCarouselNav
-                        total={eduMembers.length}
-                        activeIdx={eduIdx}
-                        onSelect={setEduIdx}
-                      />
                       <div
                         className="overflow-hidden"
                         {...makeSwipeHandlers(eduTouchX, eduIdx, eduMembers.length, setEduIdx, setEduDir)}
@@ -1507,6 +1502,11 @@ export function SurveyStepper({
                         </AnimatePresence>
                       </div>
                       {!canAddMember && <MemberLimitWarning />}
+                      <MemberCarouselNav
+                        total={eduMembers.length}
+                        activeIdx={eduIdx}
+                        onSelect={setEduIdx}
+                      />
                       <Button
                         variant="outline"
                         size="sm"
@@ -1543,11 +1543,6 @@ export function SurveyStepper({
                   />
                   {hasUnemployment === "Yes" && unempMembers.length > 0 && (
                     <div className="flex flex-col gap-3">
-                      <MemberCarouselNav
-                        total={unempMembers.length}
-                        activeIdx={unempIdx}
-                        onSelect={setUnempIdx}
-                      />
                       <div
                         className="overflow-hidden"
                         {...makeSwipeHandlers(unempTouchX, unempIdx, unempMembers.length, setUnempIdx, setUnempDir)}
@@ -1721,6 +1716,11 @@ export function SurveyStepper({
                         </AnimatePresence>
                       </div>
                       {!canAddMember && <MemberLimitWarning />}
+                      <MemberCarouselNav
+                        total={unempMembers.length}
+                        activeIdx={unempIdx}
+                        onSelect={setUnempIdx}
+                      />
                       <Button
                         variant="outline"
                         size="sm"
