@@ -1019,14 +1019,14 @@ export function SurveyStepper({
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-8 px-3 text-xs"
+                          className="h-8 px-5 text-xs -mt-4"
                           onClick={handleValidateMobile}
                           disabled={isValidatingMobile || !mobile || mobile.length < 10}
                         >
                           {isValidatingMobile ? (
                             <Loader2 className="size-3.5 animate-spin" />
                           ) : (
-                            "Validate"
+                            "Verify"
                           )}
                         </Button>
                       </div>
