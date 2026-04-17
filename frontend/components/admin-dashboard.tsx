@@ -227,6 +227,7 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -338,6 +339,16 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
             <Input
               placeholder="10-digit mobile"
               value={mobileNumber}
+              onChange={(e) => handleMobileChange(e.target.value)}
+              className="h-8"
+              disabled={isLoading}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label className="text-xs">Email</Label>
+            <Input
+              placeholder="surveyor@example.com"
+              value={email}
               onChange={(e) => handleMobileChange(e.target.value)}
               className="h-8"
               disabled={isLoading}
