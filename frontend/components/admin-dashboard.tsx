@@ -27,15 +27,17 @@ interface AdminDashboardProps {
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const { logout } = useAuth();
-  const [surveyors, setSurveyors] = useState<Surveyor[]>([]);
+  const [allSurveyorsData, setAllSurveyorsData] = useState<Surveyor[]>([]);
   const [villages, setVillages] = useState<Village[]>([]);
-  const [totalSurveyors, setTotalSurveyors] = useState(0);
-  const [activeCount, setActiveCount] = useState(0);
-  const [inactiveCount, setInactiveCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [activeTabValue, setActiveTabValue] = useState("surveyors");
+
+  // Derive counts from actual data (single source of truth)
+  const totalSurveyors = allSurveyorsData.length;
+  const activeCount = allSurveyorsData.filter(s => s.isActive).length;
+  const inactiveCount = allSurveyorsData.filter(s => !s.isActive).length;
 
   useEffect(() => {
     loadInitialData();
@@ -45,26 +47,15 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     try {
       setIsLoading(true);
       setError(null);
-      // Fetch 1st page of surveyors + villages
+      // Fetch ALL surveyors (with high limit) to get accurate counts
+      // This ensures counts always reflect the complete dataset
       const [surveyorsResponse, villagesResponse] = await Promise.all([
-        AdminApiService.getSurveyors(1, 10),
-        AdminApiService.getVillages(1, 1000), // Get all villages for assignment dropdowns
+        AdminApiService.getSurveyors(1, 10000), // Fetch all surveyors to calculate accurate counts
+        AdminApiService.getVillages(1, 1000),
       ]);
-      setSurveyors(surveyorsResponse.surveyors);
-      setTotalSurveyors(surveyorsResponse.pagination.total);
-
-      // Calculate active count manually from surveyors page 1 or fetch from stats
-      // Simplified: use recruiters count or backend logic. For now, we use surveyorsResponse total as active count isn't in paged resp.
-      // Better: fetch actual active count from surveyorsResponse if we fetch status 'active' separately, 
-      // but let's just use the current logic if we fetched all surveyors.
-      // Since surveyorsResponse is only page 1, we can't get active count for all pages.
-      // I'll calculate it from surveyors if they are all fetched, or if not, default to total.
-      const allSurveyors = surveyorsResponse.surveyors;
-      const active = allSurveyors.filter(s => s.isActive).length;
-      const inactive = allSurveyors.filter(s => !s.isActive).length;
-      setActiveCount(active);
-      setInactiveCount(inactive);
-
+      
+      // Store complete surveyors data - single source of truth
+      setAllSurveyorsData(surveyorsResponse.surveyors);
       setVillages(villagesResponse.villages);
     } catch (error: any) {
       setError(error.message || "Failed to load data");
@@ -205,18 +196,18 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           {/* Surveyor List Tab */}
           <TabsContent value="surveyors" className="mt-4">
             <SurveyorListSection
+              allSurveyorsData={allSurveyorsData}
               villages={villages}
               onUpdated={loadInitialData}
-              onCountUpdate={setActiveCount}
             />
           </TabsContent>
 
           {/* Inactive Surveyors Tab */}
           <TabsContent value="inactive-surveyors" className="mt-4">
             <InactiveSurveyorsSection
+              allSurveyorsData={allSurveyorsData}
               villages={villages}
               onUpdated={loadInitialData}
-              onCountUpdate={setInactiveCount}
             />
           </TabsContent>
 
@@ -483,24 +474,50 @@ function AddVillageSection({ onVillageAdded }: { onVillageAdded: () => void }) {
 // C. Surveyor List — with inline "Assign Villages" panel per surveyor
 // ─────────────────────────────────────────────────────────────────────────────
 function SurveyorListSection({
+  allSurveyorsData,
   villages,
   onUpdated,
-  onCountUpdate,
 }: {
+  allSurveyorsData: Surveyor[];
   villages: Village[];
   onUpdated: () => void;
-  onCountUpdate: (count: number) => void;
 }) {
-  const [surveyors, setSurveyors] = useState<Surveyor[]>([]);
-  const [filteredCount, setFilteredCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [isLoadingList, setIsLoadingList] = useState(false);
   const itemsPerPage = 10;
-  const [pagination, setPagination] = useState({
-    pages: 1
+  
+  // Calculate active surveyors and their count from shared data
+  const activeSurveyors = allSurveyorsData.filter(s => s.isActive);
+  const filteredCount = activeSurveyors.length;
+  const pages = Math.ceil(filteredCount / itemsPerPage) || 1;
+  
+  // Apply search filter
+  const searchedSurveyors = activeSurveyors.filter(s => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      (s.firstName || "").toLowerCase().includes(query) ||
+      (s.lastName || "").toLowerCase().includes(query) ||
+      (s.username || "").toLowerCase().includes(query) ||
+      (s.mobileNumber || "").includes(query) ||
+      (s.assignedVillages || []).some(v => v.toLowerCase().includes(query))
+    );
   });
+  
+  // Paginate
+  const surveyors = searchedSurveyors.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  
+  // Reset to page 1 if current page exceeds available pages
+  useEffect(() => {
+    if (currentPage > pages && pages > 0) {
+      setCurrentPage(1);
+    }
+  }, [pages, currentPage] );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [openId, setOpenId] = useState<string | null>(null);
@@ -521,31 +538,6 @@ function SurveyorListSection({
       + num[Math.floor(Math.random() * num.length)];
     for (let i = 0; i < 5; i++) p += all[Math.floor(Math.random() * all.length)];
     setResetPasswordValue(p.split("").sort(() => 0.5 - Math.random()).join(""));
-  };
-
-  useEffect(() => {
-    fetchSurveyors();
-  }, [currentPage, searchQuery]);
-
-  const fetchSurveyors = async () => {
-    try {
-      setIsLoadingList(true);
-      setError(null);
-      const response = await AdminApiService.getSurveyors(currentPage, 10, searchQuery);
-      // Filter only active surveyors
-      const activeSurveyors = response.surveyors.filter(s => s.isActive);
-      setSurveyors(activeSurveyors);
-      
-      // Calculate pagination based on filtered data
-      const pages = Math.ceil(activeSurveyors.length / itemsPerPage) || 1;
-      setPagination({ pages });
-      setFilteredCount(activeSurveyors.length);
-      onCountUpdate(activeSurveyors.length);
-    } catch (err: any) {
-      setError(err.message || "Failed to load surveyors");
-    } finally {
-      setIsLoadingList(false);
-    }
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -570,8 +562,7 @@ function SurveyorListSection({
       setError(null);
       setLoadingToggleId(surveyorId);
       await AdminApiService.toggleSurveyorStatus(surveyorId, !currentStatus);
-      fetchSurveyors(); // update local list
-      onUpdated(); // update parent stats
+      onUpdated(); // Refetch all data and recalculate counts
     } catch (error: any) {
       setError(error.message || "Failed to toggle status");
     } finally {
@@ -629,18 +620,7 @@ function SurveyorListSection({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 min-h-[300px]">
-        {error && (
-          <div className="p-2 rounded-lg border border-destructive/50 bg-destructive/10">
-            <p className="text-xs text-destructive">{error}</p>
-          </div>
-        )}
-
-        {isLoadingList ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="text-xs text-muted-foreground">Loading surveyors...</p>
-          </div>
-        ) : surveyors.length === 0 ? (
+        {surveyors.length === 0 ? (
           <div className="text-center py-12 flex flex-col gap-2">
             <p className="text-muted-foreground text-sm">
               {searchQuery ? "No surveyors found matching your search." : "No surveyors yet."}
@@ -734,7 +714,6 @@ function SurveyorListSection({
                     villages={villages}
                     onSaved={() => {
                       setOpenId(null);
-                      fetchSurveyors();
                       onUpdated();
                     }}
                   />
@@ -786,12 +765,12 @@ function SurveyorListSection({
         </Dialog>
 
         {/* Pagination Controls */}
-        {pagination.pages > 1 && (
+        {pages > 1 && (
           <div className="mt-4 pt-2 border-t flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
-              disabled={currentPage === 1 || isLoadingList}
+              disabled={currentPage === 1}
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               className="h-8 px-2 text-xs gap-1"
             >
@@ -800,10 +779,10 @@ function SurveyorListSection({
             </Button>
 
             <div className="flex items-center gap-1">
-              {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+              {Array.from({ length: pages }, (_, i) => i + 1)
                 .filter(p => {
-                  if (pagination.pages <= 5) return true;
-                  return Math.abs(p - currentPage) <= 1 || p === 1 || p === pagination.pages;
+                  if (pages <= 5) return true;
+                  return Math.abs(p - currentPage) <= 1 || p === 1 || p === pages;
                 })
                 .map((p, i, arr) => (
                   <React.Fragment key={p}>
@@ -826,8 +805,8 @@ function SurveyorListSection({
             <Button
               variant="ghost"
               size="sm"
-              disabled={currentPage === pagination.pages || isLoadingList}
-              onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
+              disabled={currentPage === pages}
+              onClick={() => setCurrentPage(p => Math.min(pages, p + 1))}
               className="h-8 px-2 text-xs gap-1"
             >
               Next
@@ -844,24 +823,49 @@ function SurveyorListSection({
 // D. Inactive Surveyors List — displays only inactive surveyors
 // ─────────────────────────────────────────────────────────────────────────────
 function InactiveSurveyorsSection({
+  allSurveyorsData,
   villages,
   onUpdated,
-  onCountUpdate,
 }: {
+  allSurveyorsData: Surveyor[];
   villages: Village[];
   onUpdated: () => void;
-  onCountUpdate: (count: number) => void;
 }) {
-  const [surveyors, setSurveyors] = useState<Surveyor[]>([]);
-  const [filteredCount, setFilteredCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [isLoadingList, setIsLoadingList] = useState(false);
   const itemsPerPage = 10;
-  const [pagination, setPagination] = useState({
-    pages: 1
+  
+  // Calculate inactive surveyors and their count from shared data
+  const inactiveSurveyors = allSurveyorsData.filter(s => !s.isActive);
+  const filteredCount = inactiveSurveyors.length;
+  const pages = Math.ceil(filteredCount / itemsPerPage) || 1;
+  
+  // Apply search filter
+  const searchedSurveyors = inactiveSurveyors.filter(s => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      (s.firstName || "").toLowerCase().includes(query) ||
+      (s.lastName || "").toLowerCase().includes(query) ||
+      (s.username || "").toLowerCase().includes(query) ||
+      (s.mobileNumber || "").includes(query) ||
+      (s.assignedVillages || []).some(v => v.toLowerCase().includes(query))
+    );
   });
+  
+  // Paginate
+  const surveyors = searchedSurveyors.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  
+  // Reset to page 1 if current page exceeds available pages
+  useEffect(() => {
+    if (currentPage > pages && pages > 0) {
+      setCurrentPage(1);
+    }
+  }, [pages, currentPage]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [openId, setOpenId] = useState<string | null>(null);
@@ -884,31 +888,6 @@ function InactiveSurveyorsSection({
     setResetPasswordValue(p.split("").sort(() => 0.5 - Math.random()).join(""));
   };
 
-  useEffect(() => {
-    fetchSurveyors();
-  }, [currentPage, searchQuery]);
-
-  const fetchSurveyors = async () => {
-    try {
-      setIsLoadingList(true);
-      setError(null);
-      const response = await AdminApiService.getSurveyors(currentPage, 10, searchQuery);
-      // Filter only inactive surveyors
-      const inactiveSurveyors = response.surveyors.filter(s => !s.isActive);
-      setSurveyors(inactiveSurveyors);
-      
-      // Calculate pagination based on filtered data
-      const pages = Math.ceil(inactiveSurveyors.length / itemsPerPage) || 1;
-      setPagination({ pages });
-      setFilteredCount(inactiveSurveyors.length);
-      onCountUpdate(inactiveSurveyors.length);
-    } catch (err: any) {
-      setError(err.message || "Failed to load inactive surveyors");
-    } finally {
-      setIsLoadingList(false);
-    }
-  };
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -927,13 +906,11 @@ function InactiveSurveyorsSection({
 
   const toggleStatus = async (surveyorId: string, currentStatus: boolean) => {
     try {
-      setError(null);
       setLoadingToggleId(surveyorId);
       await AdminApiService.toggleSurveyorStatus(surveyorId, !currentStatus);
-      fetchSurveyors();
-      onUpdated();
+      onUpdated(); // Refetch all data and recalculate counts
     } catch (error: any) {
-      setError(error.message || "Failed to toggle status");
+      // Error is displayed in parent dashboard
     } finally {
       setLoadingToggleId(null);
     }
@@ -987,18 +964,7 @@ function InactiveSurveyorsSection({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 min-h-[300px]">
-        {error && (
-          <div className="p-2 rounded-lg border border-destructive/50 bg-destructive/10">
-            <p className="text-xs text-destructive">{error}</p>
-          </div>
-        )}
-
-        {isLoadingList ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="text-xs text-muted-foreground">Loading inactive surveyors...</p>
-          </div>
-        ) : surveyors.length === 0 ? (
+        {surveyors.length === 0 ? (
           <div className="text-center py-12 flex flex-col gap-2">
             <p className="text-muted-foreground text-sm">
               {searchQuery ? "No inactive surveyors found matching your search." : "No inactive surveyors."}
@@ -1092,7 +1058,6 @@ function InactiveSurveyorsSection({
                     villages={villages}
                     onSaved={() => {
                       setOpenId(null);
-                      fetchSurveyors();
                       onUpdated();
                     }}
                   />
@@ -1144,12 +1109,12 @@ function InactiveSurveyorsSection({
         </Dialog>
 
         {/* Pagination Controls */}
-        {pagination.pages > 1 && (
+        {pages > 1 && (
           <div className="mt-4 pt-2 border-t flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
-              disabled={currentPage === 1 || isLoadingList}
+              disabled={currentPage === 1}
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               className="h-8 px-2 text-xs gap-1"
             >
@@ -1158,10 +1123,10 @@ function InactiveSurveyorsSection({
             </Button>
 
             <div className="flex items-center gap-1">
-              {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+              {Array.from({ length: pages }, (_, i) => i + 1)
                 .filter(p => {
-                  if (pagination.pages <= 5) return true;
-                  return Math.abs(p - currentPage) <= 1 || p === 1 || p === pagination.pages;
+                  if (pages <= 5) return true;
+                  return Math.abs(p - currentPage) <= 1 || p === 1 || p === pages;
                 })
                 .map((p, i, arr) => (
                   <React.Fragment key={p}>
@@ -1184,8 +1149,8 @@ function InactiveSurveyorsSection({
             <Button
               variant="ghost"
               size="sm"
-              disabled={currentPage === pagination.pages || isLoadingList}
-              onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
+              disabled={currentPage === pages}
+              onClick={() => setCurrentPage(p => Math.min(pages, p + 1))}
               className="h-8 px-2 text-xs gap-1"
             >
               Next
