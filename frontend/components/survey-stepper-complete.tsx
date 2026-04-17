@@ -1026,7 +1026,7 @@ export function SurveyStepper({
                           {isValidatingMobile ? (
                             <Loader2 className="size-3.5 animate-spin" />
                           ) : (
-                            "Validate"
+                            "Verify"
                           )}
                         </Button>
                       </div>
