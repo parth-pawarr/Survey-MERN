@@ -19,7 +19,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { LogOut, Loader2, Users, MapPin, BarChart3, TrendingUp, ChevronDown, ChevronUp, CheckCircle2, Search, ChevronLeft, ChevronRight, Key, Trash2 } from "lucide-react";
+import { LogOut, Loader2, Users, MapPin, BarChart3, TrendingUp, ChevronDown, ChevronUp, CheckCircle2, Search, ChevronLeft, ChevronRight, Key } from "lucide-react";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -478,7 +478,6 @@ function SurveyorListSection({
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [loadingToggleId, setLoadingToggleId] = useState<string | null>(null);
-  const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
   const [resetPasswordSurveyor, setResetPasswordSurveyor] = useState<Surveyor | null>(null);
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
@@ -546,20 +545,7 @@ function SurveyorListSection({
     }
   };
 
-  const handleDelete = async (surveyorId: string) => {
-    if (!confirm("Are you sure you want to delete this surveyor? This cannot be undone.")) return;
-    try {
-      setError(null);
-      setLoadingDeleteId(surveyorId);
-      await AdminApiService.deleteSurveyor(surveyorId);
-      fetchSurveyors();
-      onUpdated();
-    } catch (error: any) {
-      setError(error.message || "Failed to delete surveyor");
-    } finally {
-      setLoadingDeleteId(null);
-    }
-  };
+
 
   const openResetPassword = (surveyor: Surveyor) => {
     setResetPasswordSurveyor(surveyor);
@@ -706,19 +692,6 @@ function SurveyorListSection({
                       title="Reset password"
                     >
                       <Key className="size-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(surveyor._id)}
-                      disabled={loadingDeleteId === surveyor._id}
-                      className="h-6 text-xs px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      {loadingDeleteId === surveyor._id ? (
-                        <Loader2 className="size-3 animate-spin" />
-                      ) : (
-                        <Trash2 className="size-3" />
-                      )}
                     </Button>
                   </div>
                 </div>
