@@ -281,6 +281,15 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
     }
   };
 
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      setError("Enter a valid email address");
+    } else {
+      setError("");
+    }
+  };
+
   const handleSubmit = async () => {
     if (!firstName || !lastName || !mobileNumber || !password) {
       setError("All fields are required");
@@ -300,7 +309,7 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
         firstName,
         lastName,
         password,
-        email: `${mobileNumber}@survey.com`,
+        email: email || `${mobileNumber}@survey.com`,
         mobileNumber,
         assignedVillages: [],   // villages assigned separately
       });
@@ -365,7 +374,7 @@ function AddSurveyorSection({ onSurveyorAdded }: { onSurveyorAdded: () => void }
             <Input
               placeholder="surveyor@example.com"
               value={email}
-              onChange={(e) => handleMobileChange(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               className="h-8"
               disabled={isLoading}
             />
