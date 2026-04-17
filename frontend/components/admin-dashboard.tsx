@@ -31,9 +31,11 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [villages, setVillages] = useState<Village[]>([]);
   const [totalSurveyors, setTotalSurveyors] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
+  const [inactiveCount, setInactiveCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [activeTabValue, setActiveTabValue] = useState("surveyors");
 
   useEffect(() => {
     loadInitialData();
@@ -57,8 +59,11 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       // but let's just use the current logic if we fetched all surveyors.
       // Since surveyorsResponse is only page 1, we can't get active count for all pages.
       // I'll calculate it from surveyors if they are all fetched, or if not, default to total.
-      const active = surveyorsResponse.surveyors.filter(s => s.isActive).length;
+      const allSurveyors = surveyorsResponse.surveyors;
+      const active = allSurveyors.filter(s => s.isActive).length;
+      const inactive = allSurveyors.filter(s => !s.isActive).length;
       setActiveCount(active);
+      setInactiveCount(inactive);
 
       setVillages(villagesResponse.villages);
     } catch (error: any) {
@@ -179,10 +184,11 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         </div>
 
         {/* Tab Navigation */}
-        <Tabs defaultValue="surveyors">
+        <Tabs value={activeTabValue} onValueChange={setActiveTabValue}>
           <TabsList className="flex flex-wrap gap-1 h-auto bg-muted/60 p-1 rounded-xl">
             {[
-              { v: "surveyors", label: "👥 Surveyor" },
+              { v: "surveyors", label: `👥 Surveyor (${activeCount})` },
+              { v: "inactive-surveyors", label: `🚫 Inactive (${inactiveCount})` },
               { v: "add-surveyor", label: "➕ Add Surveyor" },
               { v: "add-village", label: "🏘️ Add Village" },
             ].map((t) => (
@@ -201,6 +207,16 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <SurveyorListSection
               villages={villages}
               onUpdated={loadInitialData}
+              onCountUpdate={setActiveCount}
+            />
+          </TabsContent>
+
+          {/* Inactive Surveyors Tab */}
+          <TabsContent value="inactive-surveyors" className="mt-4">
+            <InactiveSurveyorsSection
+              villages={villages}
+              onUpdated={loadInitialData}
+              onCountUpdate={setInactiveCount}
             />
           </TabsContent>
 
@@ -449,19 +465,21 @@ function AddVillageSection({ onVillageAdded }: { onVillageAdded: () => void }) {
 function SurveyorListSection({
   villages,
   onUpdated,
+  onCountUpdate,
 }: {
   villages: Village[];
   onUpdated: () => void;
+  onCountUpdate: (count: number) => void;
 }) {
   const [surveyors, setSurveyors] = useState<Surveyor[]>([]);
+  const [filteredCount, setFilteredCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [isLoadingList, setIsLoadingList] = useState(false);
+  const itemsPerPage = 10;
   const [pagination, setPagination] = useState({
-    total: 0,
-    pages: 1,
-    limit: 10
+    pages: 1
   });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -494,8 +512,15 @@ function SurveyorListSection({
       setIsLoadingList(true);
       setError(null);
       const response = await AdminApiService.getSurveyors(currentPage, 10, searchQuery);
-      setSurveyors(response.surveyors);
-      setPagination(response.pagination);
+      // Filter only active surveyors
+      const activeSurveyors = response.surveyors.filter(s => s.isActive);
+      setSurveyors(activeSurveyors);
+      
+      // Calculate pagination based on filtered data
+      const pages = Math.ceil(activeSurveyors.length / itemsPerPage) || 1;
+      setPagination({ pages });
+      setFilteredCount(activeSurveyors.length);
+      onCountUpdate(activeSurveyors.length);
     } catch (err: any) {
       setError(err.message || "Failed to load surveyors");
     } finally {
@@ -564,7 +589,7 @@ function SurveyorListSection({
     <Card>
       <CardHeader className="pb-2">
         <div className="flex flex-col gap-3">
-          <CardTitle className="text-base">Surveyors ({pagination.total})</CardTitle>
+          <CardTitle className="text-base">Surveyors ({filteredCount})</CardTitle>
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="flex gap-2">
@@ -640,9 +665,6 @@ function SurveyorListSection({
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 ml-2 shrink-0">
-                    <Badge variant={surveyor.isActive ? "default" : "secondary"} className="text-xs">
-                      {surveyor.isActive ? "Active" : "Inactive"}
-                    </Badge>
                     <Button
                       size="sm"
                       variant="outline"
@@ -799,7 +821,365 @@ function SurveyorListSection({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Assign Villages Panel — inline inside SurveyorListSection
+// D. Inactive Surveyors List — displays only inactive surveyors
+// ─────────────────────────────────────────────────────────────────────────────
+function InactiveSurveyorsSection({
+  villages,
+  onUpdated,
+  onCountUpdate,
+}: {
+  villages: Village[];
+  onUpdated: () => void;
+  onCountUpdate: (count: number) => void;
+}) {
+  const [surveyors, setSurveyors] = useState<Surveyor[]>([]);
+  const [filteredCount, setFilteredCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [isLoadingList, setIsLoadingList] = useState(false);
+  const itemsPerPage = 10;
+  const [pagination, setPagination] = useState({
+    pages: 1
+  });
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [loadingToggleId, setLoadingToggleId] = useState<string | null>(null);
+  const [resetPasswordSurveyor, setResetPasswordSurveyor] = useState<Surveyor | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [resetPasswordError, setResetPasswordError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const generatePassword = () => {
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const num = "0123456789";
+    const all = upper + lower + num;
+    let p = upper[Math.floor(Math.random() * upper.length)]
+      + lower[Math.floor(Math.random() * lower.length)]
+      + num[Math.floor(Math.random() * num.length)];
+    for (let i = 0; i < 5; i++) p += all[Math.floor(Math.random() * all.length)];
+    setResetPasswordValue(p.split("").sort(() => 0.5 - Math.random()).join(""));
+  };
+
+  useEffect(() => {
+    fetchSurveyors();
+  }, [currentPage, searchQuery]);
+
+  const fetchSurveyors = async () => {
+    try {
+      setIsLoadingList(true);
+      setError(null);
+      const response = await AdminApiService.getSurveyors(currentPage, 10, searchQuery);
+      // Filter only inactive surveyors
+      const inactiveSurveyors = response.surveyors.filter(s => !s.isActive);
+      setSurveyors(inactiveSurveyors);
+      
+      // Calculate pagination based on filtered data
+      const pages = Math.ceil(inactiveSurveyors.length / itemsPerPage) || 1;
+      setPagination({ pages });
+      setFilteredCount(inactiveSurveyors.length);
+      onCountUpdate(inactiveSurveyors.length);
+    } catch (err: any) {
+      setError(err.message || "Failed to load inactive surveyors");
+    } finally {
+      setIsLoadingList(false);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setCurrentPage(1);
+    setSearchQuery(searchInput);
+  };
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setCurrentPage(1);
+      setSearchQuery(value);
+    }, 400);
+  };
+
+  const toggleStatus = async (surveyorId: string, currentStatus: boolean) => {
+    try {
+      setError(null);
+      setLoadingToggleId(surveyorId);
+      await AdminApiService.toggleSurveyorStatus(surveyorId, !currentStatus);
+      fetchSurveyors();
+      onUpdated();
+    } catch (error: any) {
+      setError(error.message || "Failed to toggle status");
+    } finally {
+      setLoadingToggleId(null);
+    }
+  };
+
+  const openResetPassword = (surveyor: Surveyor) => {
+    setResetPasswordSurveyor(surveyor);
+    setResetPasswordValue("");
+    setResetPasswordError("");
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordSurveyor || resetPasswordValue.length < 6) {
+      setResetPasswordError("Password must be at least 6 characters");
+      return;
+    }
+    try {
+      setResetPasswordLoading(true);
+      setResetPasswordError("");
+      await AdminApiService.resetSurveyorPassword(resetPasswordSurveyor._id, resetPasswordValue);
+      setResetPasswordSurveyor(null);
+      setResetPasswordValue("");
+    } catch (err: any) {
+      setResetPasswordError(err.message || "Failed to reset password");
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex flex-col gap-3">
+          <CardTitle className="text-base">Inactive Surveyors ({filteredCount})</CardTitle>
+
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, village, mobile..."
+                className="pl-8 h-9 text-xs"
+                value={searchInput}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
+              />
+            </div>
+            <Button type="submit" size="sm" className="h-9 px-3 text-xs">
+              Search
+            </Button>
+          </form>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2 min-h-[300px]">
+        {error && (
+          <div className="p-2 rounded-lg border border-destructive/50 bg-destructive/10">
+            <p className="text-xs text-destructive">{error}</p>
+          </div>
+        )}
+
+        {isLoadingList ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-xs text-muted-foreground">Loading inactive surveyors...</p>
+          </div>
+        ) : surveyors.length === 0 ? (
+          <div className="text-center py-12 flex flex-col gap-2">
+            <p className="text-muted-foreground text-sm">
+              {searchQuery ? "No inactive surveyors found matching your search." : "No inactive surveyors."}
+            </p>
+            {searchQuery && (
+              <Button
+                variant="link"
+                size="sm"
+                className="text-xs"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearchQuery("");
+                }}
+              >
+                Clear Search
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {surveyors.map((surveyor) => (
+              <div key={surveyor._id} className="border rounded-lg overflow-hidden">
+                {/* Row */}
+                <div className="flex items-center justify-between px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {surveyor.firstName} {surveyor.lastName}
+                      <span className="text-xs ml-1 font-normal text-muted-foreground">({surveyor.username})</span>
+                    </p>
+                    {/* Current villages as small badges */}
+                    {surveyor.assignedVillages.length > 0 ? (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {surveyor.assignedVillages.map((v) => (
+                          <Badge key={v} variant="secondary" className="text-xs px-1.5 py-0">
+                            {v}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground/70 mt-0.5 italic">No villages assigned</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                    <Badge variant="secondary" className="text-xs">
+                      Inactive
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => toggleStatus(surveyor._id, surveyor.isActive)}
+                      disabled={loadingToggleId === surveyor._id}
+                      className="h-6 text-xs px-2"
+                    >
+                      {loadingToggleId === surveyor._id ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        "Activate"
+                      )}
+                    </Button>
+                    {/* Assign Villages toggle */}
+                    <Button
+                      size="sm"
+                      variant={openId === surveyor._id ? "default" : "outline"}
+                      className="h-6 text-xs px-2 gap-1"
+                      onClick={() => setOpenId(openId === surveyor._id ? null : surveyor._id)}
+                    >
+                      <MapPin className="size-3" />
+                      Assign
+                      {openId === surveyor._id ? (
+                        <ChevronUp className="size-3" />
+                      ) : (
+                        <ChevronDown className="size-3" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openResetPassword(surveyor)}
+                      className="h-6 text-xs px-2"
+                      title="Reset password"
+                    >
+                      <Key className="size-3" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Inline Assign Villages Panel */}
+                {openId === surveyor._id && (
+                  <AssignVillagesPanel
+                    surveyor={surveyor}
+                    villages={villages}
+                    onSaved={() => {
+                      setOpenId(null);
+                      fetchSurveyors();
+                      onUpdated();
+                    }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Reset Password Dialog */}
+        <Dialog open={!!resetPasswordSurveyor} onOpenChange={(open) => !open && setResetPasswordSurveyor(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Password</DialogTitle>
+              <DialogDescription>
+                Set a new password for {resetPasswordSurveyor?.firstName} {resetPasswordSurveyor?.lastName} ({resetPasswordSurveyor?.username})
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2 py-2">
+              <Label className="text-xs">New Password</Label>
+              <div className="flex gap-1">
+                <Input
+                  type="text"
+                  placeholder="Min 6 characters"
+                  value={resetPasswordValue}
+                  onChange={(e) => {
+                    setResetPasswordValue(e.target.value);
+                    setResetPasswordError("");
+                  }}
+                  className="flex-1"
+                  disabled={resetPasswordLoading}
+                />
+                <Button variant="outline" size="sm" onClick={generatePassword} disabled={resetPasswordLoading} className="shrink-0">
+                  <Key className="size-4" />
+                </Button>
+              </div>
+              {resetPasswordError && <p className="text-xs text-destructive">{resetPasswordError}</p>}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setResetPasswordSurveyor(null)} disabled={resetPasswordLoading}>
+                Cancel
+              </Button>
+              <Button onClick={handleResetPassword} disabled={resetPasswordLoading || resetPasswordValue.length < 6}>
+                {resetPasswordLoading ? <Loader2 className="size-4 animate-spin" /> : null}
+                Reset Password
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Pagination Controls */}
+        {pagination.pages > 1 && (
+          <div className="mt-4 pt-2 border-t flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={currentPage === 1 || isLoadingList}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              className="h-8 px-2 text-xs gap-1"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Prev
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+                .filter(p => {
+                  if (pagination.pages <= 5) return true;
+                  return Math.abs(p - currentPage) <= 1 || p === 1 || p === pagination.pages;
+                })
+                .map((p, i, arr) => (
+                  <React.Fragment key={p}>
+                    {i > 0 && arr[i - 1] !== p - 1 && (
+                      <span className="text-xs text-muted-foreground">...</span>
+                    )}
+                    <Button
+                      variant={currentPage === p ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setCurrentPage(p)}
+                      className={`h-7 w-7 p-0 text-xs ${currentPage === p ? "pointer-events-none" : ""}`}
+                    >
+                      {p}
+                    </Button>
+                  </React.Fragment>
+                ))
+              }
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={currentPage === pagination.pages || isLoadingList}
+              onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
+              className="h-8 px-2 text-xs gap-1"
+            >
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Assign Villages Panel — inline inside SurveyorListSection and InactiveSurveyorsSection
 // ─────────────────────────────────────────────────────────────────────────────
 function AssignVillagesPanel({
   surveyor,
