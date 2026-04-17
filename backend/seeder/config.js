@@ -28,7 +28,7 @@ const UNEMPLOYMENT_REASONS = [
 
 const EMPLOYMENT_STATUS = ['Unemployed', 'Suboptimally Employed'];
 
-const HIGHEST_EDUCATION = ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Higher Secondary', 'ITI / Diploma', 'Graduate', 'Postgraduate'];
+const HIGHEST_EDUCATION = ['Illiterate', 'Primary', '10th Pass', '12th Pass', 'Graduate', 'Postgraduate'];
 
 const EDUCATIONAL_ISSUES = [
   'Financial problem', 'Transportation issue', 'Poor academic performance',
@@ -51,90 +51,91 @@ const VILLAGES = [
 // ─── INDIAN NAMES ──────────────────────────────────────────────────────────────
 
 const MALE_FIRST_NAMES = [
-  'Aditya', 'Kartik', 'Rohan', 'Sameer', 'Harsh', 'Lokesh', 'Tarun',
-  'Devendra', 'Nitin', 'Varun', 'Manish', 'Hitesh', 'Gaurav', 'Anup',
-  'Siddharth', 'Chirag', 'Arvind', 'Kamal', 'Naveen', 'Sandeep', 'Rituraj',
-  'Hemant', 'Jitendra', 'Ravindra', 'Mukesh', 'Dilip', 'Anand', 'Mayur',
-  'Shailesh', 'Tushar', 'Chetan', 'Darshan', 'Harshal', 'Sagar', 'Bhavesh',
-  'Kedar', 'Rohidas', 'Milind', 'Swapnil', 'Nandu', 'Pravin', 'Hemraj',
-  'Suyash', 'Ritesh', 'Niraj', 'Shantanu', 'Adarsh', 'Tanmay', 'Viren',
-  'Mahavir', 'Shrikant', 'Eknath', 'Baban', 'Gajanan', 'Hanuman',
-  'Ramdas', 'Shivram', 'Keshav', 'Bapurao', 'Namdeo', 'Shivaji',
+  //Hindu Names
+  'Arjun', 'Rohit', 'Vikas', 'Santosh', 'Mahesh', 'Suresh', 'Ramesh',
+  'Ganesh', 'Dinesh', 'Rakesh', 'Naresh', 'Umesh', 'Rajesh', 'Yogesh',
+  'Nilesh', 'Prashant', 'Sanjay', 'Vijay', 'Ajay', 'Rajan', 'Prakash',
+  'Ashok', 'Deepak', 'Manoj', 'Anil', 'Sunil', 'Kapil', 'Sachin',
+  'Kiran', 'Pankaj', 'Amol', 'Vishal', 'Nikhil', 'Akash', 'Abhijit',
+  'Sandesh', 'Prasad', 'Omkar', 'Shubham', 'Pratik', 'Rahul', 'Amit',
+  'Sumit', 'Kunal', 'Pranav', 'Yash', 'Atharva', 'Tejas', 'Rushikesh',
+  'Mangesh', 'Dattatray', 'Balaji', 'Vitthal', 'Pandurang', 'Maruti',
+  'Ramshankar', 'Laxman', 'Bhagwan', 'Haribhau', 'Yadav', 'Kishor',
   // Muslim names
-  'Faizan', 'Aamir', 'Sohail', 'Armaan', 'Zubair', 'Nadeem', 'Aslam',
-  'Yusuf', 'Samee', 'Parvez', 'Haris', 'Rashid', 'Nawaz', 'Firoz',
+  'Arshad', 'Imran', 'Salim', 'Farhan', 'Riyaz', 'Sabir', 'Wasim',
+  'Irfan', 'Javed', 'Karim', 'Nazim', 'Shakil', 'Tariq', 'Altaf',
 ];
 
 const FEMALE_FIRST_NAMES = [
-  'Ranjana', 'Kalpana', 'Sangeeta', 'Babita', 'Shanta', 'Kamini', 'Indu',
-  'Jyoti', 'Sarla', 'Pushpa', 'Veena', 'Rajni', 'Kusum', 'Shaila',
-  'Komal', 'Divya', 'Isha', 'Riya', 'Tanuja', 'Kiranmayi', 'Bhavana',
-  'Sonali', 'Rachana', 'Purnima', 'Sheetal', 'Alka', 'Vaishali',
-  'Monika', 'Dipali', 'Ketaki', 'Mrinal', 'Namrata', 'Rashmi',
-  'Priti', 'Shilpa', 'Anuradha', 'Uma', 'Savitri', 'Indira',
-  'Ganga', 'Tulsi', 'Kamala', 'Laxmi', 'Durga', 'Sita', 'Radha',
+  'Sunita', 'Anita', 'Kavita', 'Savita', 'Rekha', 'Meena', 'Seema',
+  'Geeta', 'Lata', 'Mala', 'Asha', 'Usha', 'Nanda', 'Vanda',
+  'Priya', 'Pooja', 'Sneha', 'Neha', 'Nisha', 'Swati', 'Pallavi',
+  'Madhuri', 'Reshma', 'Varsha', 'Sarita', 'Manisha', 'Amruta',
+  'Pratiksha', 'Ashwini', 'Gauri', 'Shraddha', 'Rutuja', 'Tejal',
+  'Deepika', 'Archana', 'Vandana', 'Nirmala', 'Sushila', 'Leela',
+  'Champa', 'Padma', 'Kamal', 'Shobha', 'Vimala', 'Tara', 'Parvati',
   // Muslim names
-  'Saba', 'Hina', 'Nazia', 'Farida', 'Rukhsar', 'Shazia', 'Parveen',
+  'Fatima', 'Ayesha', 'Zainab', 'Rehana', 'Shabana', 'Nasreen', 'Rubina',
 ];
 
 const SURNAMES = [
-  'Chaudhari', 'Kadam', 'Ghorpade', 'Thorve', 'Kshirsagar', 'Mohite', 'Nalawade',
-  'Karande', 'Pingle', 'Kanade', 'Bhave', 'Apte', 'Gokhale', 'Mehta',
-  'Agarwal', 'Bajaj', 'Malhotra', 'Kapoor', 'Saxena', 'Tiwari',
-  'Shetty', 'Reddy', 'Varma', 'Krishnan', 'Acharya', 'Desai', 'Kamat',
-  'Hegde', 'Prabhu', 'Shelar', 'Kharat', 'Mhatre', 'Pathare', 'Pise',
-  'Gite', 'Bhagat', 'Jagtap', 'Dhoble', 'Kendre', 'Wankhede',
-  'Gosavi', 'Pardeshi', 'Chopade', 'Bhalerao', 'Ranshe', 'Ghadge',
+  'Patil', 'Shinde', 'Jadhav', 'Pawar', 'More', 'Gaikwad', 'Bhosale',
+  'Deshmukh', 'Kulkarni', 'Deshpande', 'Joshi', 'Patel', 'Shah',
+  'Yadav', 'Sharma', 'Verma', 'Gupta', 'Singh', 'Thakur', 'Chauhan',
+  'Nair', 'Pillai', 'Iyer', 'Menon', 'Naik', 'Sawant', 'Bagul',
+  'Ahire', 'Borse', 'Chavan', 'Dange', 'Gavhane', 'Ingale', 'Kale',
+  'Lokhande', 'Mane', 'Nikam', 'Pagar', 'Raut', 'Salve', 'Thokal',
+  'Wagh', 'Zope', 'Gavit', 'Sonawane', 'Bhandare', 'Suryawanshi',
   // Muslim surnames
-  'Mirza', 'Baig', 'Kazi', 'Momin', 'Attar', 'Multani',
+  'Khan', 'Shaikh', 'Qureshi', 'Ansari', 'Siddiqui', 'Pathan',
 ];
 
 // ─── WEIGHTED DISTRIBUTION TABLES ─────────────────────────────────────────────
 // Format: [[value, weight], ...]  — weights are relative (not required to sum to 100)
 
 const DISTRIBUTIONS = {
-  representativeGender:   [['Male', 70], ['Female', 28], ['Other', 2]],
-  ayushmanStatus:         [['All Members Have', 40], ['Some Members Have', 30], ['None Have', 30]],
-  hasHealthIssues:        [['Yes', 50], ['No', 50]],
-  hasSchoolChildren:      [['Yes', 45], ['No', 55]],
-  hasEmployedMembers:     [['Yes', 60], ['No', 40]],
-  hasUnEmployedMembers:   [['Yes', 45], ['No', 55]],
-  employmentStatus:       [['Unemployed', 65], ['Suboptimally Employed', 35]],
-  surveyStatus:           [['Submitted', 85], ['Draft', 10], ['Verified', 4], ['Rejected', 1]],
-  isWhatsApp:             [['Yes', 70], ['No', 20], ['OMIT', 10]],
-  healthCount:            [[1, 60], [2, 30], [3, 10]],
-  educationCount:         [[1, 55], [2, 35], [3, 10]],
-  unemployedCount:        [[1, 60], [2, 30], [3, 10]],
-  morbidityCount:         [[0, 55], [1, 30], [2, 15]],
-  educIssueCount:         [[0, 40], [1, 35], [2, 20], [3, 5]],
-  skillCount:             [[0, 20], [1, 35], [2, 30], [3, 15]],
-  familySize:             [[1,3],[2,5],[3,10],[4,15],[5,20],[6,18],[7,12],[8,8],[9,5],[10,2],[11,1],[12,1]],
+  representativeGender: [['Male', 70], ['Female', 28], ['Other', 2]],
+  ayushmanStatus: [['All Members Have', 40], ['Some Members Have', 30], ['None Have', 30]],
+  hasHealthIssues: [['Yes', 50], ['No', 50]],
+  hasSchoolChildren: [['Yes', 45], ['No', 55]],
+  hasEmployedMembers: [['Yes', 60], ['No', 40]],
+  hasUnEmployedMembers: [['Yes', 45], ['No', 55]],
+  employmentStatus: [['Unemployed', 65], ['Suboptimally Employed', 35]],
+  surveyStatus: [['Submitted', 85], ['Draft', 10], ['Verified', 4], ['Rejected', 1]],
+  isWhatsApp: [['Yes', 70], ['No', 20], ['OMIT', 10]],
+  healthCount: [[1, 60], [2, 30], [3, 10]],
+  educationCount: [[1, 55], [2, 35], [3, 10]],
+  unemployedCount: [[1, 60], [2, 30], [3, 10]],
+  morbidityCount: [[0, 55], [1, 30], [2, 15]],
+  educIssueCount: [[0, 40], [1, 35], [2, 20], [3, 5]],
+  skillCount: [[0, 20], [1, 35], [2, 30], [3, 15]],
+  familySize: [[1, 3], [2, 5], [3, 10], [4, 15], [5, 20], [6, 18], [7, 12], [8, 8], [9, 5], [10, 2], [11, 1], [12, 1]],
   // Health issue frequencies – used when selecting which issues to assign
   healthIssueWeights: {
-    'Diabetes':                       20,
-    'Hypertension':                   18,
-    'Heart Disease':                  10,
-    'Asthma':                          8,
-    'Tuberculosis':                    6,
-    'Cancer':                          4,
-    'Kidney Disease':                  5,
-    'Disability':                      7,
-    'Mental Health Issues':            6,
-    'Malnutrition':                    5,
-    'Paralysis':                       3,
+    'Diabetes': 20,
+    'Hypertension': 18,
+    'Heart Disease': 10,
+    'Asthma': 8,
+    'Tuberculosis': 6,
+    'Cancer': 4,
+    'Kidney Disease': 5,
+    'Disability': 7,
+    'Mental Health Issues': 6,
+    'Malnutrition': 5,
+    'Paralysis': 3,
     'Pregnancy-related complications': 5,
-    'Other':                           3,
+    'Other': 3,
   },
   // Unemployment reason frequencies
   unemploymentReasonWeights: {
-    'No job opportunities':  25,
-    'Migration issue':        20,
-    'No skills':              15,
-    'Low education':          15,
-    'Health issue':           10,
-    'Financial problems':      8,
+    'No job opportunities': 25,
+    'Migration issue': 20,
+    'No skills': 15,
+    'Low education': 15,
+    'Health issue': 10,
+    'Financial problems': 8,
     'Family responsibilities': 5,
-    'Other':                   2,
+    'Other': 2,
   },
 };
 

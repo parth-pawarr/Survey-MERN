@@ -21,13 +21,14 @@ import { SurveyDetailModal } from "@/components/survey-detail-modal";
 
 interface SurveyorDashboardProps {
   surveyor: any;
+  initialVillage?: string;
   onLogout: () => void;
   onStartSurvey: (surveyorId: string, village: string, surveyId?: string, mode?: 'new' | 'update') => void;
 }
 
-export function SurveyorDashboard({ surveyor, onLogout, onStartSurvey }: SurveyorDashboardProps) {
+export function SurveyorDashboard({ surveyor, initialVillage, onLogout, onStartSurvey }: SurveyorDashboardProps) {
   const { logout } = useAuth();
-  const [selectedVillage, setSelectedVillage] = useState<string>("");
+  const [selectedVillage, setSelectedVillage] = useState<string>(initialVillage || "");
   const [villages, setVillages] = useState<Village[]>([]);
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [stats, setStats] = useState<SurveyorStats | null>(null);

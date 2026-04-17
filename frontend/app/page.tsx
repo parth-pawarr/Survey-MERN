@@ -7,11 +7,12 @@ import { SurveyorDashboard } from "@/components/surveyor-dashboard";
 import { SurveyStepper } from "@/components/survey-stepper-complete";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 type AppScreen =
   | { type: "login" }
   | { type: "admin" }
-  | { type: "surveyor"; surveyor: any }
+  | { type: "surveyor"; surveyor: any; initialVillage?: string }
   | { type: "survey"; surveyorId: string; village: string; surveyor: any; surveyId?: string; mode?: 'new' | 'update' };
 
 export default function Page() {
@@ -65,8 +66,13 @@ export default function Page() {
         village={screen.village}
         surveyId={screen.surveyId}
         mode={screen.mode || 'new'}
-        onComplete={() => setScreen({ type: "surveyor", surveyor: screen.surveyor })}
-        onCancel={() => setScreen({ type: "surveyor", surveyor: screen.surveyor })}
+        onComplete={() => {
+          toast.success("Survey Complete! 🎉", {
+            description: "The survey data has been successfully saved.",
+          });
+          setScreen({ type: "surveyor", surveyor: screen.surveyor, initialVillage: screen.village });
+        }}
+        onCancel={() => setScreen({ type: "surveyor", surveyor: screen.surveyor, initialVillage: screen.village })}
       />
     );
   }
@@ -75,6 +81,7 @@ export default function Page() {
     return (
       <SurveyorDashboard
         surveyor={screen.surveyor}
+        initialVillage={screen.initialVillage}
         onLogout={() => setScreen({ type: "login" })}
         onStartSurvey={(surveyorId, village, surveyId, mode) =>
           setScreen({ type: "survey", surveyorId, village, surveyor: screen.surveyor, surveyId, mode })
