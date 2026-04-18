@@ -472,9 +472,9 @@ export function SurveyorProfile({
               })()}
 
               {[
-                { label: "Starter", threshold: 10, emoji: "🥉" },
-                { label: "Field Worker", threshold: 50, emoji: "🥈" },
-                { label: "Survey Champion", threshold: 100, emoji: "🥇" }
+                { label: "Beginner", threshold: 10, emoji: "🥉" },
+                { label: "Active Contributor", threshold: 50, emoji: "🥈" },
+                { label: "Top Performer", threshold: 100, emoji: "🥇" }
               ].map((m) => {
                 const total = stats?.overview.totalSurveys || 0;
                 const isUnlocked = total >= m.threshold;
