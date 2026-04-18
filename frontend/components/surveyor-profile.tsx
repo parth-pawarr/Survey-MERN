@@ -57,9 +57,9 @@ function getTodayCount(stats: SurveyorStats): number {
 function getBadges(stats: SurveyorStats) {
   const total = stats.overview.totalSurveys;
   const milestones = [
-    { emoji: "🥉", label: "Starter", requiredSurveys: 10 },
-    { emoji: "🥈", label: "Field Worker", requiredSurveys: 50 },
-    { emoji: "🥇", label: "Survey Champion", requiredSurveys: 100 },
+    { emoji: "🥉", label: "Beginner", requiredSurveys: 10 },
+    { emoji: "🥈", label: "Active Contributor", requiredSurveys: 50 },
+    { emoji: "🥇", label: "Top Performer", requiredSurveys: 100 },
   ] as const;
 
   return milestones.map((badge) => ({
